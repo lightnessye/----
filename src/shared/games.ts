@@ -274,6 +274,40 @@ export const GAMES: GameMeta[] = [
     props: [],
     color: '#f9a826',
   },
+  {
+    id: 'werewolf',
+    name: '狼人杀',
+    latin: 'Werewolf',
+    emoji: '🐺',
+    tagline: '天黑请闭眼',
+    desc:
+      '三种规模：6 人速战、9 人经典、12 人全角色。夜里狼人刀人、预言家查人、女巫用药、守卫守人，白天轮流发言、投票放逐。全场只有手机知道你的身份。',
+    minPlayers: 6,
+    maxPlayers: 12,
+    bestPlayers: [8, 12],
+    minutes: [15, 45],
+    needs: {
+      move: false,
+      props: [],
+      thinking: 2,
+      chaos: 2,
+      warmth: 1,
+      rivalry: 2,
+      talking: 2,
+      shyFriendly: 1,
+      phones: 'each',
+    },
+    judgeModes: ['ai'],
+    judgeNote: '系统自动结算每一夜的行动与每一轮投票：狼人、预言家、女巫、守卫各自在手机上提交，时间到没交的按弃权处理。',
+    howTo: [
+      '开局前选 6 / 9 / 12 人其中一种规模，人齐了点开始，身份会发到各自手机上。',
+      '天黑时按手机提示行动：狼人一起选人下刀，预言家查一人，女巫用解药或毒药，守卫守一人。',
+      '天亮公布昨晚谁出局，活着的人按座位顺序每人说一段话。',
+      '发言完投票，得票最多的人被放逐；平票就没人出局。狼人全死好人赢，狼人数追平好人狼人赢。',
+    ],
+    props: [],
+    color: '#3f5f9e',
+  },
 ]
 
 export const GAME_BY_ID: Record<string, GameMeta> = Object.fromEntries(

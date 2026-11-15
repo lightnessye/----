@@ -65,6 +65,7 @@ export async function createRoomRoute(b: any): Promise<ApiResponse> {
     hostName: sanitizeName(b.hostName ?? ''),
     judgeMode: b.judgeMode === 'human' ? 'human' : 'ai',
     profile: clampProfile(b.profile),
+    variant: typeof b.variant === 'string' ? b.variant.slice(0, 24) : undefined,
   }
   try {
     const { room, host } = await createRoom(input)

@@ -35,11 +35,21 @@ const openBrowser = (url) => {
   spawn(cmd, args, { stdio: 'ignore', detached: true }).unref()
 }
 
-const build = () =>
+/** 整条命令作为字符串交给 shell，Windows 下才能找到 npm.cmd，也避开 DEP0190 警告 */
+const npm = (args) =>
   new Promise((resolve, reject) => {
-    const p = spawn('npm', ['run', 'build'], { cwd: root, stdio: 'inherit', shell: true })
-    p.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`构建失败，退出码 ${code}`))))
+    const p = spawn(`npm ${args.join(' ')}`, { cwd: root, stdio: 'inherit', shell: true })
+    p.on('error', reject)
+    p.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`npm ${args[0]} 失败，退出码 ${code}`))))
   })
+
+const ensureDeps = async () => {
+  // tsc / vite / esbuild 都在 node_modules/.bin 里，没有依赖包就一定构建失败
+  if (fs.existsSync(path.join(root, 'node_modules', '.bin'))) return
+  console.log('首次运行，正在安装依赖（大约 1~3 分钟，请保持网络畅通）...')
+  // 缓存放在项目内，避免 %LocalAppData% 被安全软件锁住时报 EPERM
+  await npm(['install', '--cache', '.npm-cache', '--no-audit', '--no-fund'])
+}
 
 const waitForUp = async (ms) => {
   const deadline = Date.now() + ms
@@ -59,9 +69,11 @@ if (await probe()) {
   process.exit(0)
 }
 
+await ensureDeps()
+
 if (!fs.existsSync(entry)) {
   console.log('首次运行，正在构建（大约一分钟）...')
-  await build()
+  await npm(['run', 'build'])
 }
 
 console.log('正在启动服务...')

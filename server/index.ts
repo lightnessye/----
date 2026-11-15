@@ -86,6 +86,7 @@ api.post(
           : req.body.refereeId === null
             ? null
             : String(req.body.refereeId),
+      variant: req.body?.variant === undefined ? undefined : String(req.body.variant),
     }),
   ),
 )
