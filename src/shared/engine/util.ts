@@ -10,6 +10,7 @@ import type {
   SpyData,
   StoryData,
   TwosData,
+  WerewolfData,
 } from '../types'
 
 /* ---------------------------- 随机 ---------------------------- */
@@ -104,6 +105,7 @@ export const seven = (room: Room) => slot<SevenData>(room, 'seven')
 export const story = (room: Room) => slot<StoryData>(room, 'story')
 export const never = (room: Room) => slot<NeverData>(room, 'never')
 export const mime = (room: Room) => slot<MimeData>(room, 'mime')
+export const wolf = (room: Room) => slot<WerewolfData>(room, 'werewolf')
 
 /* ---------------------------- 文本 ---------------------------- */
 

@@ -71,6 +71,7 @@ export function application(deps: { db: any; BackendError: new (code: string, st
         await configureRoute(code, token, {
           judgeMode: body?.judgeMode === undefined ? undefined : body.judgeMode === 'human' ? 'human' : 'ai',
           refereeId: body?.refereeId === undefined ? undefined : body.refereeId === null ? null : String(body.refereeId),
+          variant: body?.variant === undefined ? undefined : String(body.variant),
         }),
       )
     }

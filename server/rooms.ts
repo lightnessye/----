@@ -16,6 +16,8 @@ export interface CreateInput {
   gameId: string
   judgeMode: 'ai' | 'human'
   hostName: string
+  /** 有变体的游戏（狼人杀）在这里带上玩家选的那一版 */
+  variant?: string
 }
 
 let store: RoomStore = memoryStore()
@@ -128,6 +130,7 @@ export async function createRoom(input: CreateInput): Promise<{ room: Room; host
     updatedAt: now,
     seq: 1,
     gameId: input.gameId,
+    variant: input.variant ?? '',
     profile: input.profile,
     judgeMode: meta.judgeModes.includes(input.judgeMode) ? input.judgeMode : meta.judgeModes[0],
     refereeId: null,
@@ -195,12 +198,16 @@ export function touch(room: Room) {
   if (room.events.length > 60) room.events.splice(0, room.events.length - 60)
 }
 
-/** 房主在 lobby 里设定裁判模式与真人裁判 */
+/** 房主在 lobby 里设定裁判模式、真人裁判，以及有变体的游戏的模式 */
 export function configureRoom(
   room: Room,
-  opts: { judgeMode?: 'ai' | 'human'; refereeId?: string | null },
+  opts: { judgeMode?: 'ai' | 'human'; refereeId?: string | null; variant?: string },
 ): string | null {
   const meta = GAME_BY_ID[room.gameId]
+  if (opts.variant !== undefined) {
+    if (room.phase !== 'lobby') return '开局之后不能换模式了'
+    room.variant = String(opts.variant || '')
+  }
   if (opts.judgeMode) {
     if (!meta.judgeModes.includes(opts.judgeMode)) return `${meta.name} 不支持这种裁判方式`
     room.judgeMode = opts.judgeMode

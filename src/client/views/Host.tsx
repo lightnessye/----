@@ -7,6 +7,7 @@ import { JudgeBadge, QrImage, Seats, Scoreboard, Ticker, Timer } from '../ui/com
 import { StageView } from '../ui/StageView'
 import { RefereeConsole } from '../ui/RefereeConsole'
 import { joinHref, phoneHref, shareJoinHref } from '../route'
+import { WOLF_VARIANTS } from '../../shared/werewolf'
 import type { RoomView } from '../../shared/types'
 
 export function Host({ code, token, watch }: { code: string; token: string | null; watch?: boolean }) {
@@ -164,6 +165,14 @@ function Lobby({
     setBusy(false)
   }
 
+  const setVariant = async (variant: string) => {
+    if (!token) return
+    setBusy(true)
+    const r = await configure(view.code, token, { variant })
+    setErr(r.error ?? null)
+    setBusy(false)
+  }
+
   return (
     <div className="stage-body">
       <div className="stage-main">
@@ -259,6 +268,36 @@ function Lobby({
             </>
           )}
         </div>
+
+        {view.gameId === 'werewolf' && (
+          <div className="panel">
+            <div className="h">规模与角色表</div>
+            <div className="wolf-modes" style={{ marginBottom: 10 }}>
+              {WOLF_VARIANTS.map((v) => {
+                const on = (view.publicData?.werewolf?.variant ?? '') === v.id
+                return (
+                  <button
+                    key={v.id}
+                    type="button"
+                    className={`wolf-mode${on ? ' on' : ''}`}
+                    disabled={busy}
+                    onClick={() => void setVariant(v.id)}
+                  >
+                    <div className="wm-top">
+                      <b>{v.name}</b>
+                      <span className="chip">{v.seats} 人</span>
+                    </div>
+                    <div className="wm-roster">{v.roster}</div>
+                    <div className="wm-tag">{v.tagline}</div>
+                  </button>
+                )
+              })}
+            </div>
+            <p className="notice" style={{ marginBottom: 0 }}>
+              人数不够会少发村民，人数超了就多发村民，狼人、预言家、女巫、守卫的数量按上表来。
+            </p>
+          </div>
+        )}
 
         {err && <div className="banner err">{err}</div>}
         {needReferee && <div className="banner info">真人裁判模式还差一步：上面选一个裁判。</div>}
