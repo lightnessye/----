@@ -1,4 +1,5 @@
-import type { RoomView } from '../../shared/types'
+import type { RoomView, WolfRole } from '../../shared/types'
+import { ROLE_LABEL } from '../../shared/werewolf'
 import { nameOf, type ExtraButton, type GameUI, type StageModel } from './model'
 
 /** 每个游戏的公开数据都挂在和自己 id 同名的键下 */
@@ -21,6 +22,10 @@ const PHASE_CN: Record<string, string> = {
   read: '朗读',
   settle: '结算',
   gap: '换人',
+  night: '天黑',
+  dawn: '天亮',
+  speak: '发言',
+  exile: '放逐',
   over: '本局结束',
 }
 
@@ -565,6 +570,144 @@ const mimeUI: GameUI = {
   },
 }
 
+/* ------------------------------ 狼人杀 ------------------------------ */
+
+const wolfUI: GameUI = {
+  phaseName,
+  turnId: (view) => {
+    const d = pd(view)
+    if (view.phase !== 'speak') return null
+    return (d.order ?? [])[d.cursor ?? 0] ?? null
+  },
+  input: (view) => {
+    if (view.phase === 'night') {
+      const role = String(view.secret?.role ?? '')
+      if (role === 'wolf') return { action: 'wolfKill' }
+      if (role === 'seer') return { action: 'seerCheck' }
+      if (role === 'witch') return { action: 'witchAct' }
+      if (role === 'guard') return { action: 'guardPick' }
+      return null
+    }
+    if (view.phase === 'speak') return { action: 'speak', field: 'text' }
+    if (view.phase === 'vote') return { action: 'vote' }
+    return null
+  },
+  stage: (view) => {
+    const d = pd(view)
+    const roleOf = (id: string) => (d.deadRoles?.[id] ? ROLE_LABEL[d.deadRoles[id] as WolfRole] : null)
+    const alive = view.players.filter((p) => p.alive)
+    const chips = [
+      `${d.name ?? '默认模式'}`,
+      `${alive.length} 人活着`,
+      d.roster ?? '',
+    ].filter(Boolean)
+
+    if (view.phase === 'lobby') {
+      return idle(
+        '狼人杀 · 天黑请闭眼',
+        '先定人数，再点开始',
+        '6 人速战 / 9 人经典 / 12 人全角色，人齐了按开始，身份会发到各自手机上。',
+        [`${view.players.length} 人`, d.name ?? '9 人 · 经典', d.roster ?? ''],
+      )
+    }
+
+    if (view.phase === 'night') {
+      return {
+        eyebrow: `第 ${d.night ?? view.round} 夜 · 天黑`,
+        focus: '天黑请闭眼',
+        focusHint: '该睁眼的人看手机：狼人刀人、预言家查人、女巫用药、守卫守人',
+        tone: 'cool',
+        chips,
+        rows: view.players.map((p) => ({
+          who: p.name,
+          what: p.alive ? '闭着眼' : `已出局 · ${roleOf(p.id) ?? ''}`.trim(),
+        })),
+        note: '夜里默认 75 秒，所有人交完就提前结算。',
+      }
+    }
+
+    if (view.phase === 'dawn') {
+      const killed: string[] = d.killed ?? []
+      return {
+        eyebrow: `第 ${d.night ?? view.round} 夜 · 天亮`,
+        focus: killed.length ? `${killed.map((id: string) => nameOf(view, id)).join('、')} 出局` : '平安夜',
+        focusHint: killed.length
+          ? killed.map((id: string) => `${nameOf(view, id)}：${roleOf(id) ?? '身份未公開'}`).join(' · ')
+          : '昨晚没人死，狼刀被挡住了，或者女巫没舍得用毒',
+        tone: killed.length ? 'danger' : 'normal',
+        chips,
+        rows: view.players
+          .filter((p) => !p.alive)
+          .map((p) => ({ who: p.name, what: roleOf(p.id) ?? '身份未知', right: '出局' })),
+      }
+    }
+
+    if (view.phase === 'speak') {
+      const order: string[] = d.order ?? []
+      const cur = order[d.cursor ?? 0]
+      const said = order.filter((id) => d.speeches?.[id]).length
+      return {
+        eyebrow: `第 ${d.night ?? view.round} 天 · 发言`,
+        focus: nameOf(view, cur),
+        focusHint: '轮流说一段：谁可疑、谁昨晚不对劲，别把自己身份说漏',
+        tone: 'cool',
+        chips: [`${progress(said, order.length)}`, `${alive.length} 人活着`],
+        rows: order.map((id: string) => ({
+          who: nameOf(view, id),
+          what: d.speeches?.[id] ?? (id === cur ? '正在想……' : '还没轮到'),
+        })),
+      }
+    }
+
+    if (view.phase === 'vote') {
+      const voted = alive.filter((p) => d.votes?.[p.id] !== undefined).length
+      return {
+        eyebrow: `第 ${d.night ?? view.round} 天 · 投票`,
+        focus: '投出你最怀疑的人',
+        focusHint: '一人一票，不能投自己；平票这一轮就没人出局',
+        tone: 'hot',
+        chips,
+        rows: alive.map((p) => ({
+          who: p.name,
+          what: d.votes?.[p.id] ? '已投' : '还没投',
+        })),
+        note: voted ? `已有 ${voted} 人投完` : undefined,
+      }
+    }
+
+    if (view.phase === 'exile') {
+      const bars = Object.entries(d.tally ?? {})
+        .map(([id, n]) => ({ label: nameOf(view, id), value: Number(n) }))
+        .sort((a, b) => b.value - a.value)
+      const out = d.exiled
+      return {
+        eyebrow: `第 ${d.night ?? view.round} 天 · 放逐`,
+        focus: out ? `${nameOf(view, out)} 被放逐` : '平票，没人出局',
+        focusHint: out ? `身份：${roleOf(out) ?? '未知'}` : '票散了，下一晚继续',
+        tone: out ? 'danger' : 'normal',
+        bars,
+        chips,
+      }
+    }
+
+    const winner = d.winner
+    return {
+      eyebrow: '终局',
+      focus: winner === 'wolf' ? '狼人赢了' : winner === 'village' ? '好人赢了' : '这一局没打完',
+      focusHint: d.roster ?? '',
+      tone: 'win',
+      rows: view.players
+        .slice()
+        .sort((a, b) => b.score - a.score)
+        .map((p) => ({
+          who: p.name,
+          what: `${p.score} 分`,
+          right: ROLE_LABEL[(d.deadRoles?.[p.id] ?? d.roles?.[p.id] ?? 'villager') as WolfRole],
+        })),
+    }
+  },
+}
+
 export const GAME_UI: Record<string, GameUI> = {
   spy: spyUI,
   twos: twosUI,
@@ -574,6 +717,7 @@ export const GAME_UI: Record<string, GameUI> = {
   story: storyUI,
   never: neverUI,
   mime: mimeUI,
+  werewolf: wolfUI,
 }
 
 export const uiFor = (view: RoomView): GameUI => GAME_UI[view.gameId] ?? spyUI

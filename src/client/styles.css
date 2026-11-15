@@ -969,6 +969,73 @@ input[type='range']::-moz-range-thumb {
   color: var(--ink-faint);
 }
 
+/* 狼人杀选模式：三张竖排大卡，选完直接开房 */
+.wolf-modes {
+  display: grid;
+  gap: 10px;
+}
+
+.wolf-mode {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 15px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  color: var(--ink);
+  cursor: pointer;
+  transition: all calc(140ms * var(--site-motion)) ease;
+}
+
+.wolf-mode:hover {
+  border-color: rgba(63, 95, 158, 0.35);
+  background: #f8faff;
+}
+
+.wolf-mode:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.wolf-mode.on {
+  border-color: rgba(63, 95, 158, 0.55);
+  background: #f5f8ff;
+}
+
+.wolf-mode .wm-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+  font-size: 16px;
+}
+
+.wolf-mode .wm-top b {
+  font-size: 17px;
+  letter-spacing: 0.01em;
+}
+
+.wolf-mode .wm-roster {
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #3f5f9e;
+}
+
+.wolf-mode .wm-tag {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--ink-faint);
+}
+
+.wolf-mode .wm-foot {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-2);
+}
+
 /* ----------------------------- 大屏 ----------------------------- */
 
 .stage {

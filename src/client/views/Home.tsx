@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { createRoom } from '../api'
 import { GAME_BY_ID, GAMES } from '../../shared/games'
 import { recommend } from '../../shared/recommend'
+import { WOLF_VARIANTS } from '../../shared/werewolf'
 import type { Intimacy, Profile, Setting, Vibe } from '../../shared/types'
 import { go, hostHref, saveToken } from '../route'
 
@@ -59,8 +60,10 @@ const SETTING_SHORT: Record<Setting, string> = {
 
 export function Home() {
   const [stage, setStage] = useState<'intro' | 'survey' | 'result'>('intro')
-  /** 结果分两屏：推荐（rec）和全部游戏（games），各自一屏，互不堆叠 */
-  const [screen, setScreen] = useState<'rec' | 'games'>('rec')
+  /** 结果分三屏：推荐（rec）、全部游戏（games）、狼人杀选模式（wolf） */
+  const [screen, setScreen] = useState<'rec' | 'games' | 'wolf'>('rec')
+  /** 从哪一屏点进狼人杀选模式的，返回时要回那一屏 */
+  const [wolfFrom, setWolfFrom] = useState<'rec' | 'games'>('games')
   const [step, setStep] = useState(0)
   const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE)
   const [hostName, setHostName] = useState('')
@@ -141,7 +144,13 @@ export function Home() {
     setStage('survey')
   }
 
-  const accept = async (gameId: string) => {
+  const accept = async (gameId: string, variant?: string) => {
+    // 狼人杀有三种规模，先让玩家选模式再开房间
+    if (gameId === 'werewolf' && !variant) {
+      setWolfFrom(screen === 'games' ? 'games' : 'rec')
+      setScreen('wolf')
+      return
+    }
     setBusy(true)
     setErr(null)
     try {
@@ -151,6 +160,7 @@ export function Home() {
         hostName: hostName.trim() || '房主',
         judgeMode: meta.judgeModes[0],
         profile,
+        variant,
       })
       saveToken(res.code, res.token)
       go(hostHref(res.code))
@@ -486,6 +496,61 @@ export function Home() {
     .map((v) => VIBES.find((x) => x.v === v)?.label)
     .filter(Boolean)
     .join(' · ')
+
+  /** 狼人杀选模式：三种规模各自一套角色表，选完直接开房 */
+  if (stage === 'result' && screen === 'wolf') {
+    return (
+      <div className="app">
+        <div className="wrap">
+          <header className="result-head">
+            <div>
+              <p className="kicker">WEREWOLF</p>
+              <h1 className="result-title">狼人杀 · 选规模</h1>
+            </div>
+            <button type="button" className="btn tiny" onClick={() => setScreen(wolfFrom)}>
+              ← 返回
+            </button>
+          </header>
+
+          <div className="row result-meta">
+            <span className="chip">你们 {profile.count} 人</span>
+            <span className="chip">{profile.minutes} 分钟</span>
+            <span className="chip">全场手机上操作</span>
+          </div>
+
+          <p className="sub" style={{ marginBottom: 14 }}>
+            三种规模的角色表不一样：人少就去掉女巫和守卫，人多再请守卫上场。选一个直接开房，人齐了点开始。
+          </p>
+
+          {err && <div className="banner err">{err}</div>}
+
+          <div className="wolf-modes">
+            {WOLF_VARIANTS.map((v) => (
+              <button
+                type="button"
+                className="wolf-mode"
+                key={v.id}
+                disabled={busy}
+                onClick={() => void accept('werewolf', v.id)}
+              >
+                <div className="wm-top">
+                  <b>{v.name}</b>
+                  <span className="chip">{v.seats} 人版</span>
+                </div>
+                <div className="wm-roster">{v.roster}</div>
+                <div className="wm-tag">{v.tagline}</div>
+                <div className="wm-foot">{v.minutes} · 点这里开房 →</div>
+              </button>
+            ))}
+          </div>
+
+          <p className="notice" style={{ marginTop: 14 }}>
+            人数和模式对不上时会自动调整村民数量（角色优先保留）；开局之后不能换模式，想换就在大厅里改。
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   /** 第二屏：全部游戏。独立一页，点哪款就开哪款，不再跟推荐内容堆在一起 */
   if (stage === 'result' && screen === 'games') {
