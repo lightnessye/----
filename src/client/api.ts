@@ -30,6 +30,7 @@ export function createRoom(input: {
   hostName: string
   judgeMode: 'ai' | 'human'
   profile: Profile
+  variant?: string
 }) {
   return req<CreatedRoom>('/api/rooms', { method: 'POST', body: JSON.stringify(input) })
 }
@@ -62,7 +63,7 @@ export function sendNext(code: string, token: string) {
 export function configure(
   code: string,
   token: string,
-  opts: { judgeMode?: 'ai' | 'human'; refereeId?: string | null; hostPlays?: boolean; game?: Record<string, unknown> },
+  opts: { judgeMode?: 'ai' | 'human'; refereeId?: string | null; variant?: string },
 ) {
   return req<{ error: string | null; view: RoomView }>(`/api/rooms/${encodeURIComponent(code)}/configure`, {
     method: 'POST',

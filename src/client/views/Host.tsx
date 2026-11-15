@@ -8,7 +8,8 @@ import { GameSettings } from '../ui/GameSettings'
 import { StageView } from '../ui/StageView'
 import { RefereeConsole } from '../ui/RefereeConsole'
 import { joinHref, phoneHref, shareJoinHref } from '../route'
-import type { Player, RoomView } from '../../shared/types'
+import { WOLF_VARIANTS } from '../../shared/werewolf'
+import type { RoomView } from '../../shared/types'
 
 export function Host({ code, token, watch }: { code: string; token: string | null; watch?: boolean }) {
   const { view, error, secondsLeft, now, run, step, offline, refresh } = useRoom(code, token, watch)
@@ -174,10 +175,10 @@ function Lobby({
     setBusy(false)
   }
 
-  const setHostPlays = async (plays: boolean) => {
+  const setVariant = async (variant: string) => {
     if (!token) return
     setBusy(true)
-    const r = await configure(view.code, token, { hostPlays: plays })
+    const r = await configure(view.code, token, { variant })
     setErr(r.error ?? null)
     setBusy(false)
   }
@@ -278,36 +279,35 @@ function Lobby({
           )}
         </div>
 
-        <div className="panel">
-          <div className="h">房主自己玩不玩</div>
-          {hostIsReferee ? (
-            <p className="notice">你现在是真人裁判，只主持、不参与游戏，不用选。</p>
-          ) : (
-            <>
-              <div className="seg" style={{ marginBottom: 12 }}>
-                <button
-                  className={view.hostPlays ? 'on' : ''}
-                  disabled={busy}
-                  onClick={() => void setHostPlays(true)}
-                >
-                  🙋 房主也参加
-                </button>
-                <button
-                  className={!view.hostPlays ? 'on' : ''}
-                  disabled={busy}
-                  onClick={() => void setHostPlays(false)}
-                >
-                  🎙 房主只主持
-                </button>
-              </div>
-              <p className="notice">
-                {view.hostPlays
-                  ? '你会和大家一样拿到词、排回合、计分。开局后点下面的「我也玩」在自己的手机页提交。'
-                  : '你只负责主持和推进流程，不发词、不排回合、不计分，也不占最少人数。'}
-              </p>
-            </>
-          )}
-        </div>
+        {view.gameId === 'werewolf' && (
+          <div className="panel">
+            <div className="h">规模与角色表</div>
+            <div className="wolf-modes" style={{ marginBottom: 10 }}>
+              {WOLF_VARIANTS.map((v) => {
+                const on = (view.publicData?.werewolf?.variant ?? '') === v.id
+                return (
+                  <button
+                    key={v.id}
+                    type="button"
+                    className={`wolf-mode${on ? ' on' : ''}`}
+                    disabled={busy}
+                    onClick={() => void setVariant(v.id)}
+                  >
+                    <div className="wm-top">
+                      <b>{v.name}</b>
+                      <span className="chip">{v.seats} 人</span>
+                    </div>
+                    <div className="wm-roster">{v.roster}</div>
+                    <div className="wm-tag">{v.tagline}</div>
+                  </button>
+                )
+              })}
+            </div>
+            <p className="notice" style={{ marginBottom: 0 }}>
+              人数不够会少发村民，人数超了就多发村民，狼人、预言家、女巫、守卫的数量按上表来。
+            </p>
+          </div>
+        )}
 
         {err && <div className="banner err">{err}</div>}
         {needReferee && <div className="banner info">真人裁判模式还差一步：上面选一个裁判。</div>}

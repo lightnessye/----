@@ -7,6 +7,7 @@ import { soupEngine } from './soup'
 import { spyEngine } from './spy'
 import { storyEngine } from './story'
 import { twosEngine } from './twos'
+import { werewolfEngine } from './werewolf'
 
 export const ENGINES: Record<string, GameEngine> = {
   spy: spyEngine,
@@ -17,6 +18,7 @@ export const ENGINES: Record<string, GameEngine> = {
   story: storyEngine,
   never: neverEngine,
   mime: mimeEngine,
+  werewolf: werewolfEngine,
 }
 
 export const engineFor = (gameId: string): GameEngine | null => ENGINES[gameId] ?? null

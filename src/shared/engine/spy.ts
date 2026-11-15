@@ -65,40 +65,79 @@ function seatedInGame(room: Room) {
   return seated(room).filter((p) => !isJudge(room, p.id))
 }
 
+/** 卧底人数按真正开局的人数算：8 人及以上两个，其余一个，且至少留 2 个平民 */
+function plannedInsiderCount(n: number) {
+  return Math.max(1, Math.min(n >= 8 ? 2 : 1, n - 2))
+}
+
 function startDescribe(room: Room) {
   const d = spy(room)
   d.order = shuffle(inGame(room).map((p) => p.id))
   d.descriptions = {}
   d.votes = {}
   d.tally = {}
+  d.runoff = []
+  d.round = room.round
   const first = byId(room, d.order[0])
   phase(room, 'describe', { ms: DESC_MS, turn: 0 })
   ev(room, 'judge', judge('round', { round: room.round }) + `先从 ${first?.name ?? '1 号'} 开始。`)
 }
 
-function settleVotes(room: Room, forcedOut: string | null) {
+/** 平票：清空票箱，只让并列最高的人进入加时的一轮投票 */
+function startRunoff(room: Room, leaders: string[]) {
   const d = spy(room)
+  d.runoff = leaders
+  d.votes = {}
+  d.tally = {}
+  const names = leaders.map((id) => nameOf(room, id)).join('、')
+  phase(room, 'vote', { ms: VOTE_MS })
+  ev(room, 'judge', `票数打平（${names}），加时一轮：只能在这几个人里投，再平就由裁判抽签。`)
+}
+
+/** 结算本轮投票。返回 true 表示已揭晓（进 reveal），false 表示转入了加时投票。 */
+function settleVotes(room: Room, forcedOut: string | null): boolean {
+  const d = spy(room)
+  const runoff = d.runoff?.length ? d.runoff : null
   const voters = inGame(room).map((p) => p.id)
   const tally: Record<string, number> = {}
   for (const v of voters) {
     const t = d.votes[v]
-    if (t && byId(room, t)) tally[t] = (tally[t] ?? 0) + 1
+    if (!t || !byId(room, t)) continue
+    if (runoff && !runoff.includes(t)) continue
+    tally[t] = (tally[t] ?? 0) + 1
   }
   d.tally = tally
 
   const entries = Object.entries(tally).sort((a, b) => b[1] - a[1])
   const top = entries[0]?.[1] ?? 0
-  const tied = entries.filter(([, n]) => n === top).length > 1 && top > 0
+  const leaders = entries.filter(([, n]) => n === top && n > 0).map(([id]) => id)
 
   let outId = forcedOut ?? null
-  if (!outId && !tied) outId = entries[0]?.[0] ?? null
+  if (!outId) {
+    if (top === 0) {
+      // 加时里一票都没有：直接抽签，避免无限空转
+      if (runoff) {
+        outId = runoff[randInt(0, runoff.length - 1)]
+        ev(room, 'judge', `加时没人投票，裁判抽签：${nameOf(room, outId)} 出局。`)
+      }
+    } else if (leaders.length === 1) {
+      outId = leaders[0]
+    } else if (!runoff) {
+      startRunoff(room, leaders)
+      return false
+    } else {
+      outId = leaders[randInt(0, leaders.length - 1)]
+      ev(room, 'judge', `加时还是平，裁判抽签：${nameOf(room, outId)} 出局。`)
+    }
+  }
 
+  d.runoff = []
   d.lastOut = outId
   phase(room, 'reveal')
 
   if (!outId) {
     ev(room, 'judge', top === 0 ? '没人投票，这轮算你们集体沉默。' : judge('safe'))
-    return
+    return true
   }
 
   d.eliminated.push(outId)
@@ -115,6 +154,7 @@ function settleVotes(room: Room, forcedOut: string | null) {
       ev(room, 'judge', judge('out', { name: p.name, word: d.words[outId] }) + ` 他是平民，你们自己人打自己人。`)
     }
   }
+  return true
 }
 
 function checkEnd(room: Room) {
@@ -148,6 +188,7 @@ export const spyEngine: GameEngine = {
     d.insiderCount = 1
     d.round = 0
     d.order = []
+    d.runoff = []
     d.descriptions = {}
     d.votes = {}
     d.tally = {}
@@ -181,8 +222,8 @@ export const spyEngine: GameEngine = {
   start(room: Room) {
     const d = spy(room)
     const order = seatedInGame(room)
-    // 建房时房间里只有房主，卧底数必须等到人齐了才算
-    d.insiderCount = effectiveInsiders(order.length, d.insiderPref)
+    // create() 时房间里往往只有房主一个人，卧底数必须等真正开局再按人数算
+    d.insiderCount = plannedInsiderCount(order.length)
     const insiderSeats = shuffle(order.map((p) => p.id)).slice(0, d.insiderCount)
     for (const p of order) {
       d.words[p.id] = insiderSeats.includes(p.id) ? d.insider : d.common
@@ -228,12 +269,13 @@ export const spyEngine: GameEngine = {
       if (room.phase !== 'vote') return
       if (!actor.alive) return
       const target = String(payload?.target ?? '')
-      if (!byId(room, target) || !byId(room, target)!.alive || target === actor.id) return
+      const victim = byId(room, target)
+      if (!victim || !victim.alive || target === actor.id) return
+      if (d.runoff?.length && !d.runoff.includes(target)) return
       d.votes[actor.id] = target
       const voters = inGame(room).map((p) => p.id)
       if (allSubmitted(room, voters, 'votes', 'spy')) {
-        settleVotes(room, null)
-        if (checkEnd(room)) phase(room, 'over')
+        if (settleVotes(room, null) && checkEnd(room)) phase(room, 'over')
       }
       return
     }
@@ -243,8 +285,9 @@ export const spyEngine: GameEngine = {
       if (room.judgeMode !== 'human' || room.refereeId !== actor.id) return
       if (room.phase !== 'vote' && room.phase !== 'reveal') return
       if (room.phase === 'vote') {
-        settleVotes(room, String(payload?.target ?? '') || null)
-        if (checkEnd(room)) phase(room, 'over')
+        if (settleVotes(room, String(payload?.target ?? '') || null) && checkEnd(room)) {
+          phase(room, 'over')
+        }
       }
       return
     }
@@ -273,8 +316,7 @@ export const spyEngine: GameEngine = {
       return
     }
     if (room.phase === 'vote') {
-      settleVotes(room, null)
-      if (checkEnd(room)) phase(room, 'over')
+      if (settleVotes(room, null) && checkEnd(room)) phase(room, 'over')
       return
     }
     if (room.phase === 'reveal') {
@@ -312,14 +354,15 @@ export const spyEngine: GameEngine = {
 
     if (room.phase === 'vote') {
       const d = spy(room)
-      for (const p of alive(room)) {
-        if (d.votes[p.id] === undefined) {
-          const targets = alive(room).filter((x) => x.id !== p.id)
-          if (targets.length) d.votes[p.id] = targets[randInt(0, targets.length - 1)].id
-        }
+      const pool = d.runoff?.length ? d.runoff : null
+      for (const p of inGame(room)) {
+        if (d.votes[p.id] !== undefined) continue
+        const targets = alive(room).filter(
+          (x) => x.id !== p.id && !isJudge(room, x.id) && (!pool || pool.includes(x.id)),
+        )
+        if (targets.length) d.votes[p.id] = targets[randInt(0, targets.length - 1)].id
       }
-      settleVotes(room, null)
-      if (checkEnd(room)) phase(room, 'over')
+      if (settleVotes(room, null) && checkEnd(room)) phase(room, 'over')
     }
   },
 
@@ -332,13 +375,12 @@ export const spyEngine: GameEngine = {
       spy: {
         common: show ? d.common : '',
         insider: show ? d.insider : '',
-        insiderCount: room.phase === 'lobby' ? effectiveInsiders(seatedCount, d.insiderPref) : d.insiderCount,
-        insiderPref: d.insiderPref,
-        insiderMax: maxInsiders(seatedCount),
-        insiderAuto: autoInsiders(seatedCount),
-        describeMode: d.describeMode,
-        seatedCount,
+        // lobby 里人数还在涨，展示按当前人数算出来的计划值
+        insiderCount:
+          room.phase === 'lobby' ? plannedInsiderCount(inGame(room).length) : d.insiderCount,
         round: d.round,
+        maxRound: MAX_ROUND,
+        runoff: d.runoff ?? [],
         order: d.order,
         livingOrder,
         descriptions: show || room.phase === 'vote' ? d.descriptions : pickMasked(d),
@@ -435,14 +477,21 @@ export const spyEngine: GameEngine = {
     }
     if (room.phase === 'vote') {
       const done = d.votes[me.id] !== undefined
-      const targets = (view.players ?? []).filter((p) => p.alive && p.id !== me.id && !isJudge(room, p.id))
+      const runoff = d.runoff?.length ? d.runoff : null
+      const targets = (view.players ?? []).filter(
+        (p) => p.alive && p.id !== me.id && !isJudge(room, p.id) && (!runoff || runoff.includes(p.id)),
+      )
       return {
         ...base,
-        prompt: done ? '已投票，等票型公布' : '投一个你觉得最不像同类的人',
+        prompt: done
+          ? '已投票，等票型公布'
+          : runoff
+            ? '加时投票：只能从打平的几个人里选'
+            : '投一个你觉得最不像同类的人',
         input: done ? 'none' : 'pick',
         options: targets.map((p) => ({ value: p.id, label: p.name })),
         valueKey: 'target',
-        inputHint: '不能投自己',
+        inputHint: runoff ? '加时票不能弃权，必须投一个' : '不能投自己',
         submitted: done,
         hostHint: hostHintFor(room),
       }
@@ -486,18 +535,21 @@ function pickMasked(d: { order: string[]; descriptions: Record<string, string> }
 }
 
 function hostHintFor(room: Room) {
+  const round = room.round ? `第 ${room.round}/${MAX_ROUND} 轮 · ` : ''
   switch (room.phase) {
     case 'lobby':
       return '人到齐了就点开始，系统会自动发词。'
     case 'describe': {
       const d = spy(room)
       const cur = byId(room, d.order[room.turn])
-      return `现在等 ${cur ? clip(cur.name, 12) : '?'} 描述。卡住了按「下一步」跳过。`
+      return `${round}现在等 ${cur ? clip(cur.name, 12) : '?'} 描述。卡住了按「下一步」跳过。`
     }
     case 'vote':
-      return '投票中。所有人投完会自动公布，也可以按「下一步」强制结算。'
+      return spy(room).runoff?.length
+        ? `${round}平票加时投票中，只能从打平的人里选。`
+        : `${round}投票中。所有人投完会自动公布，也可以按「下一步」强制结算。`
     case 'reveal':
-      return '看完结果按「下一步」进入新一轮，或者结束本局。'
+      return `${round}看完结果按「下一步」进入新一轮，最多 ${MAX_ROUND} 轮。`
     case 'over':
       return '按「下一步」回到结算页继续停留，或开新局。'
     default:

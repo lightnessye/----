@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { createRoom } from '../api'
 import { GAME_BY_ID, GAMES } from '../../shared/games'
 import { recommend } from '../../shared/recommend'
+import { WOLF_VARIANTS } from '../../shared/werewolf'
 import type { Intimacy, Profile, Setting, Vibe } from '../../shared/types'
 import { gamesHref, go, hostHref, saveToken } from '../route'
 import { RecentRooms } from '../ui/RecentRooms'
@@ -33,7 +34,11 @@ const SHY = [
   { n: 2, label: '一半以上不敢开口', hint: '最好不用主动表演' },
 ] as const
 
-const COUNTS = [3, 4, 5, 6, 7, 8, 10, 12, 14, 16, 20, 24]
+/** 人数可自由填，但推荐引擎的可用区间就到这里：3 是全场最小的开局人数，24 是最大一款游戏的上限 */
+const COUNT_MIN = 3
+const COUNT_MAX = 24
+/** 常见局的人数，点一下就到位；剩下的数字靠滑杆或直接输入 */
+const COUNT_PRESETS = [4, 6, 8, 10, 12, 16, 20]
 const TOTAL_STEPS = 8
 
 const DEFAULT_PROFILE: Profile = {
@@ -56,22 +61,46 @@ const SETTING_SHORT: Record<Setting, string> = {
 
 export function Home() {
   const [stage, setStage] = useState<'intro' | 'survey' | 'result'>('intro')
+  /** 结果分三屏：推荐（rec）、全部游戏（games）、狼人杀选模式（wolf） */
+  const [screen, setScreen] = useState<'rec' | 'games' | 'wolf'>('rec')
+  /** 从哪一屏点进狼人杀选模式的，返回时要回那一屏 */
+  const [wolfFrom, setWolfFrom] = useState<'rec' | 'games'>('games')
   const [step, setStep] = useState(0)
   const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE)
   const [hostName, setHostName] = useState('')
   const [rank, setRank] = useState(0)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  /** 输入框里的原文。单独存着，才允许先删空再重新输入，不会被夹成 3 或 24 */
+  const [countText, setCountText] = useState(String(DEFAULT_PROFILE.count))
 
   const { picked, dropped } = useMemo(() => recommend(profile), [profile])
   const shown = stage === 'result' ? picked.slice(0, 4) : []
   const safeRank = Math.min(rank, Math.max(0, shown.length - 1))
   const current = shown[safeRank] ?? null
+  /** 全部 8 款：推荐的按匹配度在前，硬条件不符的排在后面，但仍然可以硬开 */
+  const allRanked = useMemo(() => [...picked, ...dropped], [picked, dropped])
 
   const canNext = step !== 3 || profile.vibes.length > 0
 
   const set = <K extends keyof Profile>(k: K, v: Profile[K]) =>
     setProfile((p) => ({ ...p, [k]: v }))
+
+  /** 加减按钮、滑杆、快捷数字、失焦都走这里：一次到位并夹进合法区间 */
+  const commitCount = (value: number) => {
+    const n = Math.round(Number(value))
+    const v = Number.isFinite(n) ? Math.min(COUNT_MAX, Math.max(COUNT_MIN, n)) : profile.count
+    set('count', v)
+    setCountText(String(v))
+  }
+
+  /** 打字过程中只记录原文，合法的值立刻生效，越界的等失焦再夹回来 */
+  const typeCount = (raw: string) => {
+    if (!/^\d{0,2}$/.test(raw)) return
+    setCountText(raw)
+    const n = Number(raw)
+    if (raw !== '' && n >= COUNT_MIN && n <= COUNT_MAX) set('count', n)
+  }
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -100,19 +129,29 @@ export function Home() {
 
   const next = () => {
     if (!canNext) return
+    // 第 1 步输入框可能被清空还没失焦，离开前先把数字补回去
+    if (step === 0) commitCount(profile.count)
     if (step < TOTAL_STEPS - 1) setStep((s) => s + 1)
     else {
       setRank(0)
+      setScreen('rec')
       setStage('result')
     }
   }
 
   const editConditions = () => {
     setStep(0)
+    setScreen('rec')
     setStage('survey')
   }
 
-  const accept = async (gameId: string) => {
+  const accept = async (gameId: string, variant?: string) => {
+    // 狼人杀有三种规模，先让玩家选模式再开房间
+    if (gameId === 'werewolf' && !variant) {
+      setWolfFrom(screen === 'games' ? 'games' : 'rec')
+      setScreen('wolf')
+      return
+    }
     setBusy(true)
     setErr(null)
     try {
@@ -122,6 +161,7 @@ export function Home() {
         hostName: hostName.trim() || '房主',
         judgeMode: meta.judgeModes[0],
         profile,
+        variant,
       })
       saveToken(res.code, res.token, { gameId, role: 'host' })
       go(hostHref(res.code))
@@ -201,24 +241,85 @@ export function Home() {
           <main className="wizard-main" key={step}>
             {step === 0 && (
               <Step no={0} title="现场几个人？" hint="算上你自己。人数会直接决定哪些游戏能开局。">
-                <div className="num-grid" role="radiogroup" aria-label="现场人数">
-                  {COUNTS.map((n) => (
+                <div className="count-card">
+                  <div className="count-display">
                     <button
-                      key={n}
                       type="button"
-                      role="radio"
-                      aria-checked={profile.count === n}
-                      className={profile.count === n ? 'on' : ''}
-                      onClick={() => {
-                        set('count', n)
-                        advanceSoon()
-                      }}
+                      className="count-step"
+                      aria-label="减少一个人"
+                      disabled={profile.count <= COUNT_MIN}
+                      onClick={() => commitCount(profile.count - 1)}
                     >
-                      {n}
+                      −
                     </button>
-                  ))}
+
+                    <div className="count-value">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={COUNT_MIN}
+                        max={COUNT_MAX}
+                        step={1}
+                        value={countText}
+                        aria-label="现场人数"
+                        onChange={(e) => typeCount(e.target.value)}
+                        onBlur={() => commitCount(countText === '' ? profile.count : Number(countText))}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') e.currentTarget.blur()
+                        }}
+                      />
+                      <span className="count-unit">人</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="count-step"
+                      aria-label="增加一个人"
+                      disabled={profile.count >= COUNT_MAX}
+                      onClick={() => commitCount(profile.count + 1)}
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <input
+                    type="range"
+                    min={COUNT_MIN}
+                    max={COUNT_MAX}
+                    step={1}
+                    value={profile.count}
+                    aria-label="拖动选择现场人数"
+                    style={
+                      {
+                        '--fill': `${((profile.count - COUNT_MIN) / (COUNT_MAX - COUNT_MIN)) * 100}%`,
+                      } as any
+                    }
+                    onChange={(e) => commitCount(Number(e.target.value))}
+                  />
+                  <div className="range-labels">
+                    <span>{COUNT_MIN} 人</span>
+                    <span>{COUNT_MAX} 人</span>
+                  </div>
+
+                  <div className="count-quick">
+                    <span className="count-quick-label">常用</span>
+                    {COUNT_PRESETS.map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        aria-pressed={profile.count === n}
+                        className={profile.count === n ? 'on' : ''}
+                        onClick={() => commitCount(n)}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <p className="field-note">不在列表里就选最接近的，推荐会按人数区间匹配。</p>
+                <p className="field-note">
+                  点加减、拖滑杆、或者直接把数字敲进去都行，{COUNT_MIN}–{COUNT_MAX} 人都能匹配；
+                  人越多能开的游戏越少，20 人往上建议拆成两桌。
+                </p>
               </Step>
             )}
 
@@ -404,6 +505,129 @@ export function Home() {
     .filter(Boolean)
     .join(' · ')
 
+  /** 狼人杀选模式：三种规模各自一套角色表，选完直接开房 */
+  if (stage === 'result' && screen === 'wolf') {
+    return (
+      <div className="app">
+        <div className="wrap">
+          <header className="result-head">
+            <div>
+              <p className="kicker">WEREWOLF</p>
+              <h1 className="result-title">狼人杀 · 选规模</h1>
+            </div>
+            <button type="button" className="btn tiny" onClick={() => setScreen(wolfFrom)}>
+              ← 返回
+            </button>
+          </header>
+
+          <div className="row result-meta">
+            <span className="chip">你们 {profile.count} 人</span>
+            <span className="chip">{profile.minutes} 分钟</span>
+            <span className="chip">全场手机上操作</span>
+          </div>
+
+          <p className="sub" style={{ marginBottom: 14 }}>
+            三种规模的角色表不一样：人少就去掉女巫和守卫，人多再请守卫上场。选一个直接开房，人齐了点开始。
+          </p>
+
+          {err && <div className="banner err">{err}</div>}
+
+          <div className="wolf-modes">
+            {WOLF_VARIANTS.map((v) => (
+              <button
+                type="button"
+                className="wolf-mode"
+                key={v.id}
+                disabled={busy}
+                onClick={() => void accept('werewolf', v.id)}
+              >
+                <div className="wm-top">
+                  <b>{v.name}</b>
+                  <span className="chip">{v.seats} 人版</span>
+                </div>
+                <div className="wm-roster">{v.roster}</div>
+                <div className="wm-tag">{v.tagline}</div>
+                <div className="wm-foot">{v.minutes} · 点这里开房 →</div>
+              </button>
+            ))}
+          </div>
+
+          <p className="notice" style={{ marginTop: 14 }}>
+            人数和模式对不上时会自动调整村民数量（角色优先保留）；开局之后不能换模式，想换就在大厅里改。
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  /** 第二屏：全部游戏。独立一页，点哪款就开哪款，不再跟推荐内容堆在一起 */
+  if (stage === 'result' && screen === 'games') {
+    return (
+      <div className="app">
+        <div className="wrap">
+          <header className="result-head">
+            <div>
+              <p className="kicker">ALL GAMES</p>
+              <h1 className="result-title">全部 {GAMES.length} 款</h1>
+            </div>
+            <button type="button" className="btn tiny" onClick={() => setScreen('rec')}>
+              ← 返回推荐
+            </button>
+          </header>
+
+          <div className="row result-meta">
+            <span className="chip">{profile.count} 人</span>
+            <span className="chip">{profile.minutes} 分钟</span>
+            <span className="chip">{SETTING_SHORT[profile.setting]}</span>
+            <span className="chip">{vibesText}</span>
+          </div>
+
+          <p className="sub" style={{ marginBottom: 14 }}>
+            推荐只是建议，想玩哪款点哪款；标着「硬条件不符」的也能开，只是现场会有点别扭。
+          </p>
+
+          {err && <div className="banner err">{err}</div>}
+
+          <div className="panel">
+            <div className="h">全部 {GAMES.length} 款 · 点一行直接开</div>
+            <div className="alts">
+              {allRanked.map((x) => {
+                const blocked = x.rec.score === 0
+                const on = current?.game.id === x.game.id
+                return (
+                  <button
+                    type="button"
+                    className={`alt${on ? ' on' : ''}`}
+                    key={x.game.id}
+                    disabled={busy}
+                    onClick={() => void accept(x.game.id)}
+                  >
+                    <span className="e">{x.game.emoji}</span>
+                    <span>
+                      <div className="n">
+                        {x.game.name}
+                        {on && <span className="tag">推荐中</span>}
+                        {blocked && <span className="tag off">硬条件不符</span>}
+                      </div>
+                      <div className="t">{blocked ? x.rec.watch[0] : x.game.tagline}</div>
+                    </span>
+                    <span className={`m${blocked ? ' off' : ''}`}>
+                      {blocked ? `${x.game.minPlayers}–${x.game.maxPlayers} 人` : `${x.rec.percent}%`}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <p className="notice" style={{ marginTop: 12 }}>
+            匹配度按你填的条件算。人数不在它的可玩区间时，那局会少一个平民位或者多摊一张牌，开之前跟大家说一声就行。
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="app">
       <div className="wrap">
@@ -431,9 +655,10 @@ export function Home() {
 
         {!current ? (
           <div className="card accent center">
-            <h2>这几个条件凑不出合适的局</h2>
+            <h2>按这些条件，没有一款是完全合适的</h2>
             <p className="sub" style={{ marginBottom: 16 }}>
-              8 款都试过了，剩下的是硬条件没过。回去放宽一条——通常把时长或者「人手一台手机」调一下就有解。
+              8 款的硬条件都对不上。回去放宽一条通常最稳——把时长或者「人手一台手机」调一下就有解；
+              要是你们就想硬开，点下面的「看看全部 {GAMES.length} 款游戏」，挑一个照样能开，只是会有点别扭。
             </p>
             <button type="button" className="btn primary" onClick={editConditions}>
               回去改条件
@@ -506,77 +731,47 @@ export function Home() {
                   </button>
                 </div>
                 <p className="notice center" style={{ marginTop: 12 }}>
-                  共 {shown.length} 个候选，按匹配度排序。换一个不会改变你填的条件。
+                  按匹配度排的前 {shown.length} 个，换一个不会改变你填的条件。
                 </p>
-
-                <h3>为什么推它</h3>
-                <ul className="reasons">
-                  {current.rec.why.map((w, i) => (
-                    <li key={i}>{w}</li>
-                  ))}
-                  {current.rec.watch.map((w, i) => (
-                    <li className="warn" key={`w${i}`}>
-                      注意：{w}
-                    </li>
-                  ))}
-                </ul>
-
-                <ol className="howto" style={{ marginBottom: 16 }}>
-                  {current.game.howTo.map((h, i) => (
-                    <li key={i}>{h}</li>
-                  ))}
-                </ol>
-
               </div>
             </div>
 
-            <div className="panel" style={{ marginTop: 16 }}>
-              <div className="h">其它候选，也可以直接开</div>
-              <div className="alts">
-                {pickedOther(picked, current.game.id).map((x) => (
-                  <button
-                    type="button"
-                    className="alt"
-                    key={x.game.id}
-                    disabled={busy}
-                    onClick={() => void accept(x.game.id)}
-                  >
-                    <span className="e">{x.game.emoji}</span>
-                    <span>
-                      <div className="n">{x.game.name}</div>
-                      <div className="t">{x.game.tagline}</div>
-                    </span>
-                    <span className="m">{x.rec.percent}</span>
-                  </button>
+            <section className="panel" style={{ marginTop: 16 }} aria-label="为什么推荐它">
+              <div className="h">为什么推它</div>
+              <ul className="reasons">
+                {current.rec.why.map((w, i) => (
+                  <li key={i}>{w}</li>
                 ))}
-              </div>
-            </div>
+                {current.rec.watch.map((w, i) => (
+                  <li className="warn" key={`w${i}`}>
+                    注意：{w}
+                  </li>
+                ))}
+              </ul>
+            </section>
 
-            {dropped.length > 0 && (
-              <div className="panel" style={{ marginTop: 16 }}>
-                <div className="h">这次被硬条件刷掉的</div>
-                <div className="alts">
-                  {dropped.slice(0, 3).map((x) => (
-                    <div className="alt" key={x.game.id} style={{ cursor: 'default' }}>
-                      <span className="e">{x.game.emoji}</span>
-                      <span>
-                        <div className="n">{x.game.name}</div>
-                        <div className="t">{x.rec.watch[0] ?? '条件不符'}</div>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <section className="panel" style={{ marginTop: 12 }} aria-label="怎么玩">
+              <div className="h">怎么玩</div>
+              <ol className="howto">
+                {current.game.howTo.map((h, i) => (
+                  <li key={i}>{h}</li>
+                ))}
+              </ol>
+            </section>
           </>
         )}
+
+        <button
+          type="button"
+          className="btn big"
+          style={{ marginTop: 16 }}
+          onClick={() => setScreen('games')}
+        >
+          看看全部 {GAMES.length} 款游戏 →
+        </button>
       </div>
     </div>
   )
-}
-
-function pickedOther(all: ReturnType<typeof recommend>['picked'], id: string) {
-  return all.filter((x) => x.game.id !== id).slice(0, 4)
 }
 
 function Step(props: { no: number; title: string; hint?: string; children: ReactNode }) {

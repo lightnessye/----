@@ -97,6 +97,8 @@ export interface Room {
   updatedAt: number
   seq: number
   gameId: string
+  /** 有变体的游戏（目前只有狼人杀）在这里记玩家选的那一版 */
+  variant?: string
   profile: Profile
   judgeMode: JudgeMode
   refereeId: string | null
@@ -133,6 +135,7 @@ export interface GameData {
   story?: StoryData
   never?: NeverData
   mime?: MimeData
+  werewolf?: WerewolfData
 }
 
 /* ---------------------------- 谁是卧底 ---------------------------- */
@@ -147,8 +150,12 @@ export interface SpyData {
   insiderPref: number | null
   describeMode: SpyDescribeMode
   round: number
+  /** 最多几轮（第 maxRound 轮结束还没分出胜负就算卧底赢） */
+  maxRound: number
   /** 本轮描述顺序（playerId） */
   order: string[]
+  /** 平票后进入加时投票的候选人（playerId）；空数组表示这是普通一轮 */
+  runoff: string[]
   /** playerId -> 分到的词 */
   words: Record<string, string>
   descriptions: Record<string, string>
@@ -305,6 +312,58 @@ export interface MimeData {
   maxRound: number
   /** 每位比划者的得分 */
   scores: Record<string, number>
+}
+
+/* ------------------------------ 狼人杀 ------------------------------ */
+export type WolfRole = 'wolf' | 'seer' | 'witch' | 'guard' | 'villager'
+export type WolfVariantId = 'quick' | 'classic' | 'full'
+
+/** 夜里各自提交的东西，按玩家 id 存；换阶段时整体清空 */
+export interface WolfNightState {
+  /** 狼人 playerId -> 刀谁 */
+  wolfVotes: Record<string, string>
+  /** 预言家查谁 */
+  seerPick: string | null
+  /** 这一晚查到的结果 */
+  seerSeen: { id: string; role: WolfRole } | null
+  /** 女巫这一晚的动作：save / poison:<id> / skip */
+  witchAct: string | null
+  /** 守卫守谁 */
+  guardPick: string | null
+}
+
+export interface WerewolfData {
+  variant: WolfVariantId
+  /** playerId -> 身份；只私发给本人，死者白天公开 */
+  roles: Record<string, WolfRole>
+  /** 第几夜，和 room.round 同步 */
+  night: number
+  nightState: WolfNightState
+  /** 天亮后公布：昨晚死的人（按座位序） */
+  killed: string[]
+  /** 被毒死的人（单独标出来，方便播报） */
+  poisoned: string | null
+  /** 守中了狼刀，被救下来的人 */
+  saved: string | null
+  /** 已经出局的人（夜里死的 + 投出去的） */
+  dead: string[]
+  /** 死者身份，白天公开 */
+  deadRoles: Record<string, WolfRole>
+  /** 白天发言顺序 */
+  order: string[]
+  cursor: number
+  speeches: Record<string, string>
+  votes: Record<string, string>
+  tally: Record<string, number>
+  /** 上一轮被投出去的人 */
+  exiled: string | null
+  win: 'wolf' | 'village' | null
+  /** 女巫还剩哪几瓶药 */
+  potions: { save: boolean; poison: boolean }
+  /** 守卫上一晚守的人（不能连着守同一个人） */
+  lastGuard: string | null
+  /** 预言家查过的记录，只私发给预言家 */
+  history: { night: number; id: string; role: WolfRole }[]
 }
 
 /* ------------------------------------------------------------------ *

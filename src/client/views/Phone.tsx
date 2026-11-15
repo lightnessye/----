@@ -8,7 +8,10 @@ import { RefereeConsole } from '../ui/RefereeConsole'
 import { JudgeBadge, Seats, Ticker } from '../ui/common'
 import { Result } from './Host'
 import { go, joinHref, shareHostHref, tokenFor } from '../route'
-import type { RoomView } from '../../shared/types'
+import type { RoomView, WolfRole } from '../../shared/types'
+import { ROLE_LABEL } from '../../shared/werewolf'
+
+const nameIn = (view: RoomView, id: string) => view.players.find((p) => p.id === id)?.name ?? '某人'
 
 export function Phone({ code, token }: { code: string; token: string | null }) {
   const { view, error, secondsLeft, now, run, offline } = useRoom(code, token)
@@ -210,9 +213,20 @@ export function Phone({ code, token }: { code: string; token: string | null }) {
 }
 
 function TimerRow({ view, now, secondsLeft }: { view: RoomView; now: number; secondsLeft: number | null }) {
+  void now
+  const max = Number(view.publicData?.[view.gameId]?.maxRound ?? 0)
+  const unit = String(view.publicData?.[view.gameId]?.roundUnit ?? '轮')
+  const label =
+    view.round > 0
+      ? max > 0
+        ? `第 ${view.round} / ${max} ${unit} · 剩余`
+        : `第 ${view.round} ${unit} · 剩余`
+      : unit === '轮'
+        ? '本轮剩余'
+        : `本${unit}剩余`
   return (
     <div className="row between">
-      <span className="dim">本轮剩余</span>
+      <span className="dim">{label}</span>
       <span className={`mono ${secondsLeft !== null && secondsLeft <= 5 ? 'chip hot' : ''}`} style={{ fontWeight: 800 }}>
         {secondsLeft} 秒
       </span>
@@ -254,6 +268,34 @@ function SecretCard({ view }: { view: RoomView }) {
         <div className="k">你的词 · 别给旁边的人看到</div>
         <div className="w">{word}</div>
         {!view.me.alive && <div className="secret-hint">你已经出局了，这个词留作纪念</div>}
+      </div>
+    )
+  }
+
+  if (view.gameId === 'werewolf' && s.label) {
+    const mates = (s.teammates ?? []) as { id: string; name: string }[]
+    const history = (s.history ?? []) as { night: number; id: string; role: WolfRole }[]
+    const potions = s.potions as { save: boolean; poison: boolean } | undefined
+    return (
+      <div className="word-card">
+        <div className="k">你的身份 · 别给旁边的人看到</div>
+        <div className="w">{s.label}</div>
+        <div className="secret-hint">{s.desc}</div>
+        {mates.length > 0 && (
+          <div className="secret-hint">队友：{mates.map((m) => m.name).join('、')}</div>
+        )}
+        {history.length > 0 && (
+          <div className="secret-hint">
+            {history
+              .map((h) => `第 ${h.night} 夜查 ${nameIn(view, h.id)}：${ROLE_LABEL[h.role]}`)
+              .join('；')}
+          </div>
+        )}
+        {potions && (
+          <div className="secret-hint">
+            解药 {potions.save ? '还在' : '用掉了'} · 毒药 {potions.poison ? '还在' : '用掉了'}
+          </div>
+        )}
       </div>
     )
   }
