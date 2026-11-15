@@ -339,6 +339,15 @@ export function act(
     return null
   }
   if (action === 'say') return say(room, actor, payload)
+  if (action === 'mic') {
+    actor.micOn = !!payload?.on
+    // 闭麦时清掉和这名玩家相关的信令，别人不会再回复一条已经死掉的连接
+    if (!actor.micOn && room.voice?.length) {
+      room.voice = room.voice.filter((s) => s.from !== actor.id && s.to !== actor.id)
+    }
+    touch(room)
+    return null
+  }
   engine.act(room, actor, action, payload ?? {})
   touch(room)
   syncSpeakTimer(room, Date.now())

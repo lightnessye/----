@@ -77,7 +77,10 @@ export function Seats({
           >
             <AvatarBadge id={p.avatar} seat={p.seat} size={30} />
             <span style={{ minWidth: 0 }}>
-              <div className="nm">{p.name}</div>
+              <div className="nm">
+                {p.name}
+                {p.micOn ? ' 🎙' : ''}
+              </div>
               {!compact && (
                 <div className="tag">
                   {p.isHost ? '房主' : `${p.seat} 号`}

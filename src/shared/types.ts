@@ -1,5 +1,7 @@
 /** 全局数据契约：房主大屏、玩家手机、服务端游戏引擎共用。 */
 
+import type { VoiceSignal } from './voice'
+
 export type JudgeMode = 'ai' | 'human'
 export type Role = 'host' | 'player' | 'referee' | 'watcher'
 
@@ -86,6 +88,8 @@ export interface Player {
   avatar?: string
   /** 累计发言/表演时长（ms），轮到本人发言时由服务端累加；老房间没有，按 0 兜底 */
   speakMs?: number
+  /** 是否开着麦；语音流走 P2P，这里只广播状态，老房间没有按 false 兜底 */
+  micOn?: boolean
 }
 
 /** 房间聊天：和裁判播报分开的一条流，所有端都能看到 */
@@ -137,6 +141,9 @@ export interface Room {
   data: GameData
   events: RoomEvent[]
   chat?: ChatMessage[]
+  /** WebRTC 信令信箱（语音开麦），随房间存转；语音流本身不经过服务器 */
+  voice?: VoiceSignal[]
+  voiceSeq?: number
   finished: FinalResult | null
 }
 

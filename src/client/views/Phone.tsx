@@ -8,6 +8,7 @@ import { RefereeConsole } from '../ui/RefereeConsole'
 import { JudgeBadge, Seats, Ticker, fmtSpeak } from '../ui/common'
 import { AvatarBadge, AvatarPicker } from '../ui/Avatar'
 import { ChatPanel } from '../ui/ChatPanel'
+import { VoicePanel } from '../ui/VoicePanel'
 import { Result } from './Host'
 import { go, joinHref, shareHostHref, tokenFor } from '../route'
 import type { RoomView, WolfRole } from '../../shared/types'
@@ -224,6 +225,10 @@ export function Phone({ code, token }: { code: string; token: string | null }) {
             </div>
 
             <div style={{ marginTop: 14 }}>
+              <VoicePanel view={view} run={run} />
+            </div>
+
+            <div style={{ marginTop: 14 }}>
               <ChatPanel view={view} onSend={(t) => run('chat', { text: t })} height={260} />
             </div>
 
@@ -415,6 +420,7 @@ function LobbyPhone({
         <div className="h">已经进来的人</div>
         <Seats view={view} />
       </div>
+      <VoicePanel view={view} run={run} />
       <ChatPanel view={view} onSend={(t) => run('chat', { text: t })} height={240} />
       <div style={{ marginTop: 14 }}>
         <QuickPhrases onSay={(t) => run('say', { text: t })} />

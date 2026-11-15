@@ -1,4 +1,5 @@
 import type { Profile, RoomView } from '../shared/types'
+import type { VoiceSignal, VoiceSignalKind } from '../shared/voice'
 
 /** 本机和 Sites 共用这一个前缀，本地 Express 也挂了同一套路由，产物不再分两种 */
 const API = '/functions/v1/app'
@@ -79,5 +80,37 @@ export async function fetchShareBase(): Promise<string | null> {
     return /^https?:\/\/[^/]+$/.test(base) ? base : null
   } catch {
     return null
+  }
+}
+
+export interface VoiceOutSignal {
+  to: string
+  kind: VoiceSignalKind
+  data: unknown
+}
+
+export function fetchVoice(code: string, token: string, since: number) {
+  const q = new URLSearchParams({ token, since: String(since) })
+  return req<{ signals: VoiceSignal[]; serverNow: number }>(
+    `/api/rooms/${encodeURIComponent(code)}/voice?${q}`,
+  )
+}
+
+export function postVoice(code: string, token: string, signals: VoiceOutSignal[]) {
+  return req<{ error: string | null }>(`/api/rooms/${encodeURIComponent(code)}/voice`, {
+    method: 'POST',
+    body: JSON.stringify({ token, signals }),
+  })
+}
+
+/** 关页面/跳走时尽力闭麦， beacon 不保证送达，送不到也有离线兜底 */
+export function beaconMicOff(code: string, token: string) {
+  try {
+    const body = new Blob([JSON.stringify({ token, action: 'mic', payload: { on: false } })], {
+      type: 'application/json',
+    })
+    navigator.sendBeacon(`${API}/api/rooms/${encodeURIComponent(code)}/action`, body)
+  } catch {
+    /* 忽略 */
   }
 }

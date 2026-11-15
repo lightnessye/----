@@ -21,6 +21,7 @@ import {
   startRoom,
   type CreateInput,
 } from './rooms'
+import { postVoice, readVoice } from './voice'
 
 export interface ApiResponse {
   status: number
@@ -137,4 +138,18 @@ export async function configureRoute(code: string, token: string, opts: any): Pr
   if (!result.ok) return bad(404, result.reason === 'conflict' ? '这一步没写上，再点一次' : '房间不存在或已结束')
   if (result.value.denied) return bad(403, '只有房主能设置裁判')
   return ok({ error: result.value.error, view: buildView(result.room, token) })
+}
+
+/** 语音信令：GET 只读不写库，POST 走和其他动作一样的乐观锁 */
+export async function voiceGetRoute(code: string, token: string | null, since: number): Promise<ApiResponse> {
+  const loaded = await loadRoom(normalize(code))
+  if (!loaded) return bad(404, '房间不存在或已结束')
+  const r = readVoice(loaded.room, token ?? '', since)
+  return typeof r === 'string' ? bad(403, r) : ok(r)
+}
+
+export async function voicePostRoute(code: string, token: string, payload: any): Promise<ApiResponse> {
+  const result = await mutateRoom(normalize(code), (room) => postVoice(room, token, payload))
+  if (!result.ok) return bad(404, result.reason === 'conflict' ? '语音信令没写上，再试一次' : '房间不存在或已结束')
+  return ok({ error: result.value })
 }

@@ -5,6 +5,7 @@ import { useShareBase } from '../hooks/useShareBase'
 import { uiFor } from '../games'
 import { JudgeBadge, QrImage, Seats, Scoreboard, SpeakBoard, Ticker, Timer, fmtSpeak } from '../ui/common'
 import { ChatPanel } from '../ui/ChatPanel'
+import { VoicePanel } from '../ui/VoicePanel'
 import { GameSettings } from '../ui/GameSettings'
 import { StageView } from '../ui/StageView'
 import { RefereeConsole } from '../ui/RefereeConsole'
@@ -126,6 +127,7 @@ export function Host({ code, token, watch }: { code: string; token: string | nul
                 <Seats view={view} turnId={ui.turnId?.(view) ?? null} compact />
               </div>
               <SpeakBoard view={view} now={now} />
+              <VoicePanel view={view} run={run} />
               <ChatPanel
                 view={view}
                 onSend={watch ? undefined : (t) => run('chat', { text: t })}
@@ -377,6 +379,7 @@ function Lobby({
           <div className="h">进场记录</div>
           <Ticker events={view.events} limit={6} />
         </div>
+        <VoicePanel view={view} run={run} />
         <ChatPanel view={view} onSend={(t) => run('chat', { text: t })} height={220} />
       </div>
     </div>

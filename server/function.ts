@@ -12,6 +12,8 @@ import {
   metaBody,
   nextRoute,
   viewRoute,
+  voiceGetRoute,
+  voicePostRoute,
   type ApiResponse,
 } from './api'
 import { useRoomStore, normalize } from './rooms'
@@ -60,13 +62,19 @@ export function application(deps: { db: any; BackendError: new (code: string, st
       return json(await viewRoute(normalize(room[1]), get('token'), get('watch') === '1'))
     }
 
-    const sub = path.match(/^\/api\/rooms\/([^/]+)\/(action|next|configure)$/)
+    const voice = path.match(/^\/api\/rooms\/([^/]+)\/voice$/)
+    if (voice && request.method === 'GET') {
+      return json(await voiceGetRoute(normalize(voice[1]), get('token'), Number(get('since') ?? 0) || 0))
+    }
+
+    const sub = path.match(/^\/api\/rooms\/([^/]+)\/(action|next|configure|voice)$/)
     if (sub) {
       const code = normalize(sub[1])
       const body = await readJson(request)
       const token = String(body?.token ?? '')
       if (sub[2] === 'action') return json(await actionRoute(code, token, String(body?.action ?? ''), body?.payload))
       if (sub[2] === 'next') return json(await nextRoute(code, token, !!body?.force))
+      if (sub[2] === 'voice') return json(await voicePostRoute(code, token, body))
       return json(
         await configureRoute(code, token, {
           judgeMode: body?.judgeMode === undefined ? undefined : body.judgeMode === 'human' ? 'human' : 'ai',

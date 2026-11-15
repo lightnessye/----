@@ -263,6 +263,39 @@ var GAMES = [
     ],
     props: [],
     color: "#f9a826"
+  },
+  {
+    id: "werewolf",
+    name: "\u72FC\u4EBA\u6740",
+    latin: "Werewolf",
+    emoji: "\u{1F43A}",
+    tagline: "\u5929\u9ED1\u8BF7\u95ED\u773C",
+    desc: "\u4E09\u79CD\u89C4\u6A21\uFF1A6 \u4EBA\u901F\u6218\u30019 \u4EBA\u7ECF\u5178\u300112 \u4EBA\u5168\u89D2\u8272\u3002\u591C\u91CC\u72FC\u4EBA\u5200\u4EBA\u3001\u9884\u8A00\u5BB6\u67E5\u4EBA\u3001\u5973\u5DEB\u7528\u836F\u3001\u5B88\u536B\u5B88\u4EBA\uFF0C\u767D\u5929\u8F6E\u6D41\u53D1\u8A00\u3001\u6295\u7968\u653E\u9010\u3002\u5168\u573A\u53EA\u6709\u624B\u673A\u77E5\u9053\u4F60\u7684\u8EAB\u4EFD\u3002",
+    minPlayers: 6,
+    maxPlayers: 12,
+    bestPlayers: [8, 12],
+    minutes: [15, 45],
+    needs: {
+      move: false,
+      props: [],
+      thinking: 2,
+      chaos: 2,
+      warmth: 1,
+      rivalry: 2,
+      talking: 2,
+      shyFriendly: 1,
+      phones: "each"
+    },
+    judgeModes: ["ai"],
+    judgeNote: "\u7CFB\u7EDF\u81EA\u52A8\u7ED3\u7B97\u6BCF\u4E00\u591C\u7684\u884C\u52A8\u4E0E\u6BCF\u4E00\u8F6E\u6295\u7968\uFF1A\u72FC\u4EBA\u3001\u9884\u8A00\u5BB6\u3001\u5973\u5DEB\u3001\u5B88\u536B\u5404\u81EA\u5728\u624B\u673A\u4E0A\u63D0\u4EA4\uFF0C\u65F6\u95F4\u5230\u6CA1\u4EA4\u7684\u6309\u5F03\u6743\u5904\u7406\u3002",
+    howTo: [
+      "\u5F00\u5C40\u524D\u9009 6 / 9 / 12 \u4EBA\u5176\u4E2D\u4E00\u79CD\u89C4\u6A21\uFF0C\u4EBA\u9F50\u4E86\u70B9\u5F00\u59CB\uFF0C\u8EAB\u4EFD\u4F1A\u53D1\u5230\u5404\u81EA\u624B\u673A\u4E0A\u3002",
+      "\u5929\u9ED1\u65F6\u6309\u624B\u673A\u63D0\u793A\u884C\u52A8\uFF1A\u72FC\u4EBA\u4E00\u8D77\u9009\u4EBA\u4E0B\u5200\uFF0C\u9884\u8A00\u5BB6\u67E5\u4E00\u4EBA\uFF0C\u5973\u5DEB\u7528\u89E3\u836F\u6216\u6BD2\u836F\uFF0C\u5B88\u536B\u5B88\u4E00\u4EBA\u3002",
+      "\u5929\u4EAE\u516C\u5E03\u6628\u665A\u8C01\u51FA\u5C40\uFF0C\u6D3B\u7740\u7684\u4EBA\u6309\u5EA7\u4F4D\u987A\u5E8F\u6BCF\u4EBA\u8BF4\u4E00\u6BB5\u8BDD\u3002",
+      "\u53D1\u8A00\u5B8C\u6295\u7968\uFF0C\u5F97\u7968\u6700\u591A\u7684\u4EBA\u88AB\u653E\u9010\uFF1B\u5E73\u7968\u5C31\u6CA1\u4EBA\u51FA\u5C40\u3002\u72FC\u4EBA\u5168\u6B7B\u597D\u4EBA\u8D62\uFF0C\u72FC\u4EBA\u6570\u8FFD\u5E73\u597D\u4EBA\u72FC\u4EBA\u8D62\u3002"
+    ],
+    props: [],
+    color: "#3f5f9e"
   }
 ];
 var GAME_BY_ID = Object.fromEntries(
@@ -271,6 +304,36 @@ var GAME_BY_ID = Object.fromEntries(
 
 // src/shared/types.ts
 var ROOM_CODE_LENGTH = 6;
+
+// src/shared/avatars.ts
+var AVATARS = [
+  { id: "fox", emoji: "\u{1F98A}", label: "\u72D0\u72F8", from: "#ffb347", to: "#ff5e62" },
+  { id: "panda", emoji: "\u{1F43C}", label: "\u718A\u732B", from: "#a8e6cf", to: "#3f7d6b" },
+  { id: "frog", emoji: "\u{1F438}", label: "\u9752\u86D9", from: "#b7f34d", to: "#2fae5f" },
+  { id: "cat", emoji: "\u{1F431}", label: "\u732B\u54AA", from: "#ffd76e", to: "#ff9a3d" },
+  { id: "penguin", emoji: "\u{1F427}", label: "\u4F01\u9E45", from: "#8fd3ff", to: "#3a6fd8" },
+  { id: "lion", emoji: "\u{1F981}", label: "\u72EE\u5B50", from: "#ffe08a", to: "#e8960c" },
+  { id: "rabbit", emoji: "\u{1F430}", label: "\u5154\u5B50", from: "#ffc2e0", to: "#ff6fae" },
+  { id: "bear", emoji: "\u{1F43B}", label: "\u68D5\u718A", from: "#e0b088", to: "#9c6644" },
+  { id: "koala", emoji: "\u{1F428}", label: "\u8003\u62C9", from: "#c3cfe2", to: "#6b7f9e" },
+  { id: "tiger", emoji: "\u{1F42F}", label: "\u8001\u864E", from: "#ffb36b", to: "#e8542f" },
+  { id: "unicorn", emoji: "\u{1F984}", label: "\u72EC\u89D2\u517D", from: "#e3b7ff", to: "#8a4fff" },
+  { id: "octopus", emoji: "\u{1F419}", label: "\u7AE0\u9C7C", from: "#ff9d9d", to: "#d8437c" },
+  { id: "whale", emoji: "\u{1F433}", label: "\u9CB8\u9C7C", from: "#7ee8fa", to: "#1f7ac9" },
+  { id: "owl", emoji: "\u{1F989}", label: "\u732B\u5934\u9E70", from: "#b8a6ff", to: "#4d3f9e" },
+  { id: "chick", emoji: "\u{1F425}", label: "\u5C0F\u9E21", from: "#fff3a0", to: "#f2b705" },
+  { id: "dragon", emoji: "\u{1F432}", label: "\u5C0F\u9F99", from: "#6fe7c8", to: "#0a8f6c" }
+];
+var AVATAR_BY_ID = Object.fromEntries(
+  AVATARS.map((a) => [a.id, a])
+);
+function avatarFor(id, seat = 1) {
+  if (typeof id === "string" && AVATAR_BY_ID[id]) return AVATAR_BY_ID[id];
+  return AVATARS[(Math.max(1, Math.round(seat)) - 1) % AVATARS.length];
+}
+function sanitizeAvatar(id, seat = 1) {
+  return avatarFor(id, seat).id;
+}
 
 // src/shared/phrases.ts
 var QUICK_PHRASES = [
@@ -363,6 +426,15 @@ var P = {
   timeout: [
     "{name} \u8D85\u65F6\uFF0C\u8FD9\u4E00\u624B\u6211\u6309\u5931\u8BEF\u8BB0\u4E86\u3002",
     "\u65F6\u95F4\u5230\u3002{name} \u7684\u72B9\u8C6B\u5DF2\u7ECF\u88AB\u5168\u573A\u542C\u89C1\u3002"
+  ],
+  wolfOpen: [
+    "\u5929\u9ED1\u8BF7\u95ED\u773C\u3002\u624B\u673A\u8C03\u6697\u4E00\u70B9\uFF0C\u522B\u8BA9\u65C1\u8FB9\u7684\u4EBA\u770B\u5230\u3002",
+    "\u5165\u591C\u3002\u8BE5\u7741\u773C\u7684\u4F1A\u6536\u5230\u63D0\u793A\uFF0C\u4E0D\u8BE5\u7741\u773C\u7684\u5148\u522B\u52A8\u3002",
+    "\u5929\u9ED1\u4E86\u3002\u72FC\u4EBA\u5148\u52A8\uFF0C\u5176\u4ED6\u4EBA\u5047\u88C5\u81EA\u5DF1\u7761\u5F97\u5F88\u9999\u3002"
+  ],
+  wolfDawn: [
+    "\u5929\u4EAE\u4E86\uFF0C\u7741\u773C\u3002\u6628\u665A\u53D1\u751F\u4E86\u4EC0\u4E48\uFF0C\u5927\u5C4F\u4E0A\u81EA\u5DF1\u770B\u3002",
+    "\u767D\u5929\u4E86\u3002\u5148\u522B\u6025\u7740\u8BF4\u8BDD\uFF0C\u770B\u4E00\u773C\u8C01\u4E0D\u89C1\u4E86\u3002"
   ]
 };
 var lastUsed = {};
@@ -442,6 +514,34 @@ function phase(room, next, opts) {
 function retime(room, ms) {
   room.deadlineAt = Date.now() + ms;
 }
+var speakLimitMs = (room, defaultMs) => room.speakSeconds != null ? Math.max(1, room.speakSeconds) * 1e3 : defaultMs;
+function currentSpeaker(room) {
+  switch (room.gameId) {
+    case "spy":
+      return room.phase === "describe" ? spy(room).order.filter((id) => byId(room, id)?.alive)[room.turn] ?? null : null;
+    case "werewolf":
+      return room.phase === "speak" ? wolf(room).order[wolf(room).cursor] ?? null : null;
+    case "twos":
+      return room.phase === "show" ? twos(room).order[twos(room).cursor] ?? null : null;
+    case "never":
+      return room.phase === "show" ? never(room).order[never(room).cursor] ?? null : null;
+    case "mime":
+      return room.phase === "run" ? mime(room).actorId ?? null : null;
+    default:
+      return null;
+  }
+}
+function syncSpeakTimer(room, now) {
+  const speaker = currentSpeaker(room);
+  const prev = room.speakingId ?? null;
+  if (speaker === prev) return;
+  if (prev && room.turnStartedAt != null) {
+    const p = byId(room, prev);
+    if (p) p.speakMs = (p.speakMs ?? 0) + Math.max(0, now - room.turnStartedAt);
+  }
+  room.speakingId = speaker;
+  room.turnStartedAt = speaker ? now : null;
+}
 function allSubmitted(room, ids, key, bag) {
   const store2 = room.data[bag]?.[key];
   if (!store2) return false;
@@ -459,6 +559,7 @@ var seven = (room) => slot(room, "seven");
 var story = (room) => slot(room, "story");
 var never = (room) => slot(room, "never");
 var mime = (room) => slot(room, "mime");
+var wolf = (room) => slot(room, "werewolf");
 function grams(text) {
   const clean = (text || "").replace(/\s+/g, "");
   const out = /* @__PURE__ */ new Set();
@@ -1475,6 +1576,7 @@ function wordCount(d, ok2) {
   return d.log.filter((x) => x.ok === ok2).length;
 }
 function beginRun(room, d) {
+  d.timeMs = speakLimitMs(room, ROUND_MS);
   d.list = shuffle(MIME_WORDS[d.difficulty] ?? []).slice(0, WORDS_PER_ROUND);
   d.index = 0;
   d.actorId = actorForRound(room, d);
@@ -1865,7 +1967,7 @@ function enterRaise(room, from, prelude) {
   }
   room.round = d.cursor + 1;
   if (!d.didIt[id]) d.didIt[id] = [];
-  phase(room, "show", { ms: RAISE_MS });
+  phase(room, "show", { ms: speakLimitMs(room, RAISE_MS) });
   if (prelude) ev(room, "info", prelude);
   ev(room, "info", `${nameOf(room, id)}\uFF1A\u300C${d.claims[id]}\u300D\u2014\u2014 \u771F\u505A\u8FC7\u7684\u4EBA\u5728\u624B\u673A\u4E0A\u70B9\u300C\u6211\u505A\u8FC7\u300D\uFF0C\u6CA1\u505A\u8FC7\u7684\u4E0D\u7528\u52A8\u3002`);
 }
@@ -2868,8 +2970,6 @@ var DESC_MS = 4e4;
 var VOTE_MS = 3e4;
 var MAX_ROUND2 = 6;
 var maxInsiders = (n) => Math.max(1, n - 2);
-var autoInsiders = (n) => n >= 8 ? 2 : 1;
-var effectiveInsiders = (n, pref) => Math.max(1, Math.min(pref ?? autoInsiders(n), maxInsiders(n)));
 function defaultDescribeMode(p) {
   if (!p.phonePerPerson) return "oral";
   return p.shyLevel === 2 ? "typed" : "oral";
@@ -2896,35 +2996,68 @@ function inGame(room) {
 function seatedInGame(room) {
   return seated(room).filter((p) => !isJudge(room, p.id));
 }
+function plannedInsiderCount(n) {
+  return Math.max(1, Math.min(n >= 8 ? 2 : 1, n - 2));
+}
 function startDescribe(room) {
   const d = spy(room);
   d.order = shuffle(inGame(room).map((p) => p.id));
   d.descriptions = {};
   d.votes = {};
   d.tally = {};
+  d.runoff = [];
+  d.round = room.round;
   const first = byId(room, d.order[0]);
-  phase(room, "describe", { ms: DESC_MS, turn: 0 });
+  phase(room, "describe", { ms: speakLimitMs(room, DESC_MS), turn: 0 });
   ev(room, "judge", judge("round", { round: room.round }) + `\u5148\u4ECE ${first?.name ?? "1 \u53F7"} \u5F00\u59CB\u3002`);
+}
+function startRunoff(room, leaders) {
+  const d = spy(room);
+  d.runoff = leaders;
+  d.votes = {};
+  d.tally = {};
+  const names = leaders.map((id) => nameOf(room, id)).join("\u3001");
+  phase(room, "vote", { ms: VOTE_MS });
+  ev(room, "judge", `\u7968\u6570\u6253\u5E73\uFF08${names}\uFF09\uFF0C\u52A0\u65F6\u4E00\u8F6E\uFF1A\u53EA\u80FD\u5728\u8FD9\u51E0\u4E2A\u4EBA\u91CC\u6295\uFF0C\u518D\u5E73\u5C31\u7531\u88C1\u5224\u62BD\u7B7E\u3002`);
 }
 function settleVotes(room, forcedOut) {
   const d = spy(room);
+  const runoff = d.runoff?.length ? d.runoff : null;
   const voters = inGame(room).map((p2) => p2.id);
   const tally = {};
   for (const v of voters) {
     const t = d.votes[v];
-    if (t && byId(room, t)) tally[t] = (tally[t] ?? 0) + 1;
+    if (!t || !byId(room, t)) continue;
+    if (runoff && !runoff.includes(t)) continue;
+    tally[t] = (tally[t] ?? 0) + 1;
   }
   d.tally = tally;
   const entries = Object.entries(tally).sort((a, b) => b[1] - a[1]);
   const top = entries[0]?.[1] ?? 0;
-  const tied = entries.filter(([, n]) => n === top).length > 1 && top > 0;
+  const leaders = entries.filter(([, n]) => n === top && n > 0).map(([id]) => id);
   let outId = forcedOut ?? null;
-  if (!outId && !tied) outId = entries[0]?.[0] ?? null;
+  if (!outId) {
+    if (top === 0) {
+      if (runoff) {
+        outId = runoff[randInt(0, runoff.length - 1)];
+        ev(room, "judge", `\u52A0\u65F6\u6CA1\u4EBA\u6295\u7968\uFF0C\u88C1\u5224\u62BD\u7B7E\uFF1A${nameOf(room, outId)} \u51FA\u5C40\u3002`);
+      }
+    } else if (leaders.length === 1) {
+      outId = leaders[0];
+    } else if (!runoff) {
+      startRunoff(room, leaders);
+      return false;
+    } else {
+      outId = leaders[randInt(0, leaders.length - 1)];
+      ev(room, "judge", `\u52A0\u65F6\u8FD8\u662F\u5E73\uFF0C\u88C1\u5224\u62BD\u7B7E\uFF1A${nameOf(room, outId)} \u51FA\u5C40\u3002`);
+    }
+  }
+  d.runoff = [];
   d.lastOut = outId;
   phase(room, "reveal");
   if (!outId) {
     ev(room, "judge", top === 0 ? "\u6CA1\u4EBA\u6295\u7968\uFF0C\u8FD9\u8F6E\u7B97\u4F60\u4EEC\u96C6\u4F53\u6C89\u9ED8\u3002" : judge("safe"));
-    return;
+    return true;
   }
   d.eliminated.push(outId);
   const p = byId(room, outId);
@@ -2940,6 +3073,7 @@ function settleVotes(room, forcedOut) {
       ev(room, "judge", judge("out", { name: p.name, word: d.words[outId] }) + ` \u4ED6\u662F\u5E73\u6C11\uFF0C\u4F60\u4EEC\u81EA\u5DF1\u4EBA\u6253\u81EA\u5DF1\u4EBA\u3002`);
     }
   }
+  return true;
 }
 function checkEnd(room) {
   const ins = insidersOf(room).length;
@@ -2970,6 +3104,7 @@ var spyEngine = {
     d.insiderCount = 1;
     d.round = 0;
     d.order = [];
+    d.runoff = [];
     d.descriptions = {};
     d.votes = {};
     d.tally = {};
@@ -3001,7 +3136,7 @@ var spyEngine = {
   start(room) {
     const d = spy(room);
     const order = seatedInGame(room);
-    d.insiderCount = effectiveInsiders(order.length, d.insiderPref);
+    d.insiderCount = plannedInsiderCount(order.length);
     const insiderSeats = shuffle(order.map((p) => p.id)).slice(0, d.insiderCount);
     for (const p of order) {
       d.words[p.id] = insiderSeats.includes(p.id) ? d.insider : d.common;
@@ -3035,6 +3170,7 @@ var spyEngine = {
         phase(room, "vote", { ms: VOTE_MS });
       } else {
         room.turn = nextTurn;
+        phase(room, "describe", { ms: speakLimitMs(room, DESC_MS), turn: nextTurn });
         const nx = byId(room, d.order[nextTurn]);
         ev(room, "info", `\u8F6E\u5230 ${nx?.name ?? "?"}\u3002`);
       }
@@ -3044,12 +3180,13 @@ var spyEngine = {
       if (room.phase !== "vote") return;
       if (!actor.alive) return;
       const target = String(payload?.target ?? "");
-      if (!byId(room, target) || !byId(room, target).alive || target === actor.id) return;
+      const victim = byId(room, target);
+      if (!victim || !victim.alive || target === actor.id) return;
+      if (d.runoff?.length && !d.runoff.includes(target)) return;
       d.votes[actor.id] = target;
       const voters = inGame(room).map((p) => p.id);
       if (allSubmitted(room, voters, "votes", "spy")) {
-        settleVotes(room, null);
-        if (checkEnd(room)) phase(room, "over");
+        if (settleVotes(room, null) && checkEnd(room)) phase(room, "over");
       }
       return;
     }
@@ -3057,8 +3194,9 @@ var spyEngine = {
       if (room.judgeMode !== "human" || room.refereeId !== actor.id) return;
       if (room.phase !== "vote" && room.phase !== "reveal") return;
       if (room.phase === "vote") {
-        settleVotes(room, String(payload?.target ?? "") || null);
-        if (checkEnd(room)) phase(room, "over");
+        if (settleVotes(room, String(payload?.target ?? "") || null) && checkEnd(room)) {
+          phase(room, "over");
+        }
       }
       return;
     }
@@ -3078,6 +3216,7 @@ var spyEngine = {
           ev(room, "judge", judge("hurry", { name: stuck.name }));
         }
         room.turn += 1;
+        phase(room, "describe", { ms: speakLimitMs(room, DESC_MS), turn: room.turn });
         return;
       }
       ev(room, "judge", "\u63CF\u8FF0\u73AF\u8282\u7ED3\u675F\uFF0C\u6295\u7968\u3002");
@@ -3085,8 +3224,7 @@ var spyEngine = {
       return;
     }
     if (room.phase === "vote") {
-      settleVotes(room, null);
-      if (checkEnd(room)) phase(room, "over");
+      if (settleVotes(room, null) && checkEnd(room)) phase(room, "over");
       return;
     }
     if (room.phase === "reveal") {
@@ -3114,20 +3252,21 @@ var spyEngine = {
         phase(room, "vote", { ms: VOTE_MS });
       } else {
         room.turn += 1;
-        phase(room, "describe", { ms: DESC_MS, turn: room.turn });
+        phase(room, "describe", { ms: speakLimitMs(room, DESC_MS), turn: room.turn });
       }
       return;
     }
     if (room.phase === "vote") {
       const d = spy(room);
-      for (const p of alive(room)) {
-        if (d.votes[p.id] === void 0) {
-          const targets = alive(room).filter((x) => x.id !== p.id);
-          if (targets.length) d.votes[p.id] = targets[randInt(0, targets.length - 1)].id;
-        }
+      const pool = d.runoff?.length ? d.runoff : null;
+      for (const p of inGame(room)) {
+        if (d.votes[p.id] !== void 0) continue;
+        const targets = alive(room).filter(
+          (x) => x.id !== p.id && !isJudge(room, x.id) && (!pool || pool.includes(x.id))
+        );
+        if (targets.length) d.votes[p.id] = targets[randInt(0, targets.length - 1)].id;
       }
-      settleVotes(room, null);
-      if (checkEnd(room)) phase(room, "over");
+      if (settleVotes(room, null) && checkEnd(room)) phase(room, "over");
     }
   },
   publicData(room) {
@@ -3139,13 +3278,11 @@ var spyEngine = {
       spy: {
         common: show ? d.common : "",
         insider: show ? d.insider : "",
-        insiderCount: room.phase === "lobby" ? effectiveInsiders(seatedCount, d.insiderPref) : d.insiderCount,
-        insiderPref: d.insiderPref,
-        insiderMax: maxInsiders(seatedCount),
-        insiderAuto: autoInsiders(seatedCount),
-        describeMode: d.describeMode,
-        seatedCount,
+        // lobby 里人数还在涨，展示按当前人数算出来的计划值
+        insiderCount: room.phase === "lobby" ? plannedInsiderCount(inGame(room).length) : d.insiderCount,
         round: d.round,
+        maxRound: MAX_ROUND2,
+        runoff: d.runoff ?? [],
         order: d.order,
         livingOrder,
         descriptions: show || room.phase === "vote" ? d.descriptions : pickMasked(d),
@@ -3226,14 +3363,17 @@ var spyEngine = {
     }
     if (room.phase === "vote") {
       const done = d.votes[me.id] !== void 0;
-      const targets = (view.players ?? []).filter((p) => p.alive && p.id !== me.id && !isJudge(room, p.id));
+      const runoff = d.runoff?.length ? d.runoff : null;
+      const targets = (view.players ?? []).filter(
+        (p) => p.alive && p.id !== me.id && !isJudge(room, p.id) && (!runoff || runoff.includes(p.id))
+      );
       return {
         ...base,
-        prompt: done ? "\u5DF2\u6295\u7968\uFF0C\u7B49\u7968\u578B\u516C\u5E03" : "\u6295\u4E00\u4E2A\u4F60\u89C9\u5F97\u6700\u4E0D\u50CF\u540C\u7C7B\u7684\u4EBA",
+        prompt: done ? "\u5DF2\u6295\u7968\uFF0C\u7B49\u7968\u578B\u516C\u5E03" : runoff ? "\u52A0\u65F6\u6295\u7968\uFF1A\u53EA\u80FD\u4ECE\u6253\u5E73\u7684\u51E0\u4E2A\u4EBA\u91CC\u9009" : "\u6295\u4E00\u4E2A\u4F60\u89C9\u5F97\u6700\u4E0D\u50CF\u540C\u7C7B\u7684\u4EBA",
         input: done ? "none" : "pick",
         options: targets.map((p) => ({ value: p.id, label: p.name })),
         valueKey: "target",
-        inputHint: "\u4E0D\u80FD\u6295\u81EA\u5DF1",
+        inputHint: runoff ? "\u52A0\u65F6\u7968\u4E0D\u80FD\u5F03\u6743\uFF0C\u5FC5\u987B\u6295\u4E00\u4E2A" : "\u4E0D\u80FD\u6295\u81EA\u5DF1",
         submitted: done,
         hostHint: hostHintFor4(room)
       };
@@ -3269,18 +3409,19 @@ function pickMasked(d) {
   return out;
 }
 function hostHintFor4(room) {
+  const round = room.round ? `\u7B2C ${room.round}/${MAX_ROUND2} \u8F6E \xB7 ` : "";
   switch (room.phase) {
     case "lobby":
       return "\u4EBA\u5230\u9F50\u4E86\u5C31\u70B9\u5F00\u59CB\uFF0C\u7CFB\u7EDF\u4F1A\u81EA\u52A8\u53D1\u8BCD\u3002";
     case "describe": {
       const d = spy(room);
       const cur = byId(room, d.order[room.turn]);
-      return `\u73B0\u5728\u7B49 ${cur ? clip(cur.name, 12) : "?"} \u63CF\u8FF0\u3002\u5361\u4F4F\u4E86\u6309\u300C\u4E0B\u4E00\u6B65\u300D\u8DF3\u8FC7\u3002`;
+      return `${round}\u73B0\u5728\u7B49 ${cur ? clip(cur.name, 12) : "?"} \u63CF\u8FF0\u3002\u5361\u4F4F\u4E86\u6309\u300C\u4E0B\u4E00\u6B65\u300D\u8DF3\u8FC7\u3002`;
     }
     case "vote":
-      return "\u6295\u7968\u4E2D\u3002\u6240\u6709\u4EBA\u6295\u5B8C\u4F1A\u81EA\u52A8\u516C\u5E03\uFF0C\u4E5F\u53EF\u4EE5\u6309\u300C\u4E0B\u4E00\u6B65\u300D\u5F3A\u5236\u7ED3\u7B97\u3002";
+      return spy(room).runoff?.length ? `${round}\u5E73\u7968\u52A0\u65F6\u6295\u7968\u4E2D\uFF0C\u53EA\u80FD\u4ECE\u6253\u5E73\u7684\u4EBA\u91CC\u9009\u3002` : `${round}\u6295\u7968\u4E2D\u3002\u6240\u6709\u4EBA\u6295\u5B8C\u4F1A\u81EA\u52A8\u516C\u5E03\uFF0C\u4E5F\u53EF\u4EE5\u6309\u300C\u4E0B\u4E00\u6B65\u300D\u5F3A\u5236\u7ED3\u7B97\u3002`;
     case "reveal":
-      return "\u770B\u5B8C\u7ED3\u679C\u6309\u300C\u4E0B\u4E00\u6B65\u300D\u8FDB\u5165\u65B0\u4E00\u8F6E\uFF0C\u6216\u8005\u7ED3\u675F\u672C\u5C40\u3002";
+      return `${round}\u770B\u5B8C\u7ED3\u679C\u6309\u300C\u4E0B\u4E00\u6B65\u300D\u8FDB\u5165\u65B0\u4E00\u8F6E\uFF0C\u6700\u591A ${MAX_ROUND2} \u8F6E\u3002`;
     case "over":
       return "\u6309\u300C\u4E0B\u4E00\u6B65\u300D\u56DE\u5230\u7ED3\u7B97\u9875\u7EE7\u7EED\u505C\u7559\uFF0C\u6216\u5F00\u65B0\u5C40\u3002";
     default:
@@ -3694,7 +3835,7 @@ function enterShow(room, from, prelude) {
   }
   room.round = d.cursor + 1;
   if (!d.votes[id]) d.votes[id] = {};
-  phase(room, "show", { ms: VOTE_MS2 });
+  phase(room, "show", { ms: speakLimitMs(room, VOTE_MS2) });
   if (prelude) ev(room, "info", prelude);
   ev(room, "info", `\u73B0\u5728\u516C\u5F00 ${nameOf(room, id)} \u7684\u4E09\u6761\uFF0C\u5176\u4ED6\u4EBA\u731C\u54EA\u4E00\u6761\u662F\u7F16\u7684\u3002`);
 }
@@ -4047,6 +4188,706 @@ function hostHintFor6(room) {
   }
 }
 
+// src/shared/werewolf.ts
+var WOLF_VARIANTS = [
+  {
+    id: "quick",
+    name: "\u901F\u6218",
+    seats: 6,
+    minutes: "15 \u5206\u949F",
+    tagline: "\u4E24\u72FC\u4E00\u9884\u8A00\u5BB6\uFF0C\u6CA1\u6709\u836F\uFF0C\u5168\u9760\u5634\u786C",
+    roster: "2 \u72FC\u4EBA \xB7 1 \u9884\u8A00\u5BB6 \xB7 3 \u6751\u6C11",
+    roles: { wolf: 2, seer: 1, witch: 0, guard: 0, villager: 3 }
+  },
+  {
+    id: "classic",
+    name: "\u7ECF\u5178",
+    seats: 9,
+    minutes: "30 \u5206\u949F",
+    tagline: "\u5973\u5DEB\u7684\u4E00\u74F6\u89E3\u836F\u4E00\u74F6\u6BD2\u836F\uFF0C\u684C\u6E38\u5E97\u6700\u5E38\u89C1\u7684\u90A3\u4E00\u7248",
+    roster: "3 \u72FC\u4EBA \xB7 1 \u9884\u8A00\u5BB6 \xB7 1 \u5973\u5DEB \xB7 4 \u6751\u6C11",
+    roles: { wolf: 3, seer: 1, witch: 1, guard: 0, villager: 4 }
+  },
+  {
+    id: "full",
+    name: "\u5168\u89D2\u8272",
+    seats: 12,
+    minutes: "45 \u5206\u949F",
+    tagline: "\u5B88\u536B\u4E5F\u4E0A\u573A\uFF0C\u597D\u4EBA\u4E09\u4EF6\u5957\u51D1\u9F50",
+    roster: "4 \u72FC\u4EBA \xB7 1 \u9884\u8A00\u5BB6 \xB7 1 \u5973\u5DEB \xB7 1 \u5B88\u536B \xB7 5 \u6751\u6C11",
+    roles: { wolf: 4, seer: 1, witch: 1, guard: 1, villager: 5 }
+  }
+];
+var BY_ID = new Map(WOLF_VARIANTS.map((v) => [v.id, v]));
+var wolfVariant = (id) => (id ? BY_ID.get(id) : void 0) ?? WOLF_VARIANTS[1];
+var ROLE_LABEL = {
+  wolf: "\u72FC\u4EBA",
+  seer: "\u9884\u8A00\u5BB6",
+  witch: "\u5973\u5DEB",
+  guard: "\u5B88\u536B",
+  villager: "\u6751\u6C11"
+};
+var ROLE_DESC = {
+  wolf: "\u6BCF\u665A\u548C\u961F\u53CB\u4E00\u8D77\u5200\u4E00\u4E2A\u4EBA\uFF0C\u767D\u5929\u88C5\u6210\u597D\u4EBA\u6DF7\u8FC7\u53BB\u3002",
+  seer: "\u6BCF\u665A\u53EF\u4EE5\u67E5\u4E00\u4E2A\u4EBA\uFF0C\u77E5\u9053\u4ED6\u662F\u597D\u4EBA\u8FD8\u662F\u72FC\u4EBA\u3002",
+  witch: "\u4E00\u74F6\u89E3\u836F\u4E00\u74F6\u6BD2\u836F\uFF0C\u5404\u53EA\u80FD\u7528\u4E00\u6B21\uFF1B\u89E3\u836F\u80FD\u6551\u4E0B\u4ECA\u665A\u88AB\u5200\u7684\u4EBA\u3002",
+  guard: "\u6BCF\u665A\u5B88\u4E00\u4E2A\u4EBA\uFF0C\u4ED6\u4ECA\u665A\u4E0D\u4F1A\u6B7B\uFF1B\u4E0D\u80FD\u8FDE\u7740\u4E24\u665A\u5B88\u540C\u4E00\u4E2A\u4EBA\u3002",
+  villager: "\u6CA1\u6709\u6280\u80FD\uFF0C\u9760\u53D1\u8A00\u548C\u6295\u7968\u628A\u72FC\u4EBA\u627E\u51FA\u6765\u3002"
+};
+
+// src/shared/engine/werewolf.ts
+var NIGHT_MS = 75e3;
+var SPEAK_MS = 45e3;
+var VOTE_MS3 = 45e3;
+var emptyNight = () => ({
+  wolfVotes: {},
+  seerPick: null,
+  seerSeen: null,
+  witchAct: null,
+  guardPick: null
+});
+var roleOf = (room, id) => wolf(room).roles[id] ?? "villager";
+var wolves = (room) => alive(room).filter((p) => roleOf(room, p.id) === "wolf");
+var goodAlive = (room) => alive(room).filter((p) => roleOf(room, p.id) !== "wolf");
+function nightActors(room) {
+  const d = wolf(room);
+  const out = [];
+  for (const p of alive(room)) {
+    const role = d.roles[p.id];
+    if (role === "wolf") out.push(p.id);
+    else if (role === "seer") out.push(p.id);
+    else if (role === "witch" && (d.potions.save || d.potions.poison)) out.push(p.id);
+    else if (role === "guard") out.push(p.id);
+  }
+  return out;
+}
+function hasActed(room, id) {
+  const d = wolf(room);
+  const ns = d.nightState;
+  switch (d.roles[id]) {
+    case "wolf":
+      return ns.wolfVotes[id] !== void 0;
+    case "seer":
+      return ns.seerPick !== null;
+    case "witch":
+      return ns.witchAct !== null;
+    case "guard":
+      return ns.guardPick !== null;
+    default:
+      return true;
+  }
+}
+var nightReady = (room) => nightActors(room).every((id) => hasActed(room, id));
+function aliveTargets(room, except) {
+  const skip = new Set(except ?? []);
+  return alive(room).filter((p) => !skip.has(p.id));
+}
+function rosterFor(v, n) {
+  const list = [];
+  const push = (role, count) => {
+    for (let i = 0; i < count; i++) list.push(role);
+  };
+  const wolfCount = Math.max(1, Math.min(v.roles.wolf, Math.floor(n / 3), Math.floor((n - 1) / 2)));
+  push("wolf", wolfCount);
+  push("seer", v.roles.seer);
+  if (n >= 10) push("guard", v.roles.guard);
+  if (n >= 7) push("witch", v.roles.witch);
+  push("villager", Math.max(0, n - list.length));
+  while (list.length > n) {
+    const villager = list.lastIndexOf("villager");
+    if (villager >= 0) {
+      list.splice(villager, 1);
+      continue;
+    }
+    const guard = list.indexOf("guard");
+    if (guard >= 0) {
+      list.splice(guard, 1);
+      continue;
+    }
+    const witch = list.indexOf("witch");
+    if (witch >= 0) {
+      list.splice(witch, 1);
+      continue;
+    }
+    const spareWolf = list.lastIndexOf("wolf");
+    if (spareWolf >= 0 && list.filter((r) => r === "wolf").length > 1) {
+      list.splice(spareWolf, 1);
+      continue;
+    }
+    break;
+  }
+  return list;
+}
+function rosterText(v, n) {
+  const dealt = rosterFor(v, n);
+  const order = ["wolf", "seer", "witch", "guard", "villager"];
+  return order.map((role) => `${dealt.filter((r) => r === role).length} ${ROLE_LABEL[role]}`).filter((s) => !s.startsWith("0 ")).join(" \xB7 ");
+}
+function checkWin(room) {
+  const d = wolf(room);
+  const w = wolves(room).length;
+  const good = goodAlive(room).length;
+  if (w === 0) d.win = "village";
+  else if (w >= good) d.win = "wolf";
+  return d.win;
+}
+function killPlayer(room, id, reason) {
+  const d = wolf(room);
+  const p = byId(room, id);
+  if (!p || !p.alive) return;
+  p.alive = false;
+  p.outReason = reason;
+  d.dead.push(id);
+  d.deadRoles[id] = roleOf(room, id);
+}
+function startNight(room) {
+  const d = wolf(room);
+  d.night = room.round;
+  d.nightState = emptyNight();
+  d.killed = [];
+  d.poisoned = null;
+  d.saved = null;
+  d.speeches = {};
+  d.votes = {};
+  d.tally = {};
+  d.exiled = null;
+  d.win = null;
+  phase(room, "night", { ms: NIGHT_MS, round: room.round, turn: 0 });
+  ev(room, "judge", judge("wolfOpen", {}));
+}
+function startSpeak(room) {
+  const d = wolf(room);
+  d.order = alive(room).map((p) => p.id);
+  d.cursor = 0;
+  d.speeches = {};
+  const first = d.order[0];
+  phase(room, "speak", { ms: speakLimitMs(room, SPEAK_MS), turn: 0 });
+  ev(
+    room,
+    "judge",
+    first ? `\u5929\u4EAE\u4E86\uFF0C\u4ECE ${nameOf(room, first)} \u5F00\u59CB\u53D1\u8A00\u3002` : "\u5929\u4EAE\u4E86\uFF0C\u6CA1\u6709\u4EBA\u80FD\u53D1\u8A00\u3002"
+  );
+}
+function startVote(room) {
+  const d = wolf(room);
+  d.votes = {};
+  d.tally = {};
+  phase(room, "vote", { ms: VOTE_MS3, turn: 0 });
+  ev(room, "judge", "\u53D1\u8A00\u7ED3\u675F\uFF0C\u5F00\u59CB\u6295\u7968\u3002");
+}
+function currentSpeaker2(room) {
+  const d = wolf(room);
+  return d.order[d.cursor] ?? null;
+}
+function advanceSpeak(room) {
+  const d = wolf(room);
+  d.order = d.order.filter((id) => byId(room, id)?.alive);
+  if (d.cursor >= d.order.length - 1) {
+    startVote(room);
+    return;
+  }
+  d.cursor += 1;
+  phase(room, "speak", { ms: speakLimitMs(room, SPEAK_MS), turn: d.cursor });
+}
+function resolveNight(room) {
+  const d = wolf(room);
+  const ns = d.nightState;
+  const livingIds = new Set(alive(room).map((p) => p.id));
+  const tally = {};
+  for (const target of Object.values(ns.wolfVotes)) {
+    if (livingIds.has(target)) tally[target] = (tally[target] ?? 0) + 1;
+  }
+  let kill = null;
+  let top = 0;
+  for (const [id, n] of Object.entries(tally)) {
+    if (n > top) {
+      top = n;
+      kill = id;
+    }
+  }
+  if (top > 0) {
+    const leaders = Object.entries(tally).filter(([, n]) => n === top).map(([id]) => id);
+    kill = leaders.length === 1 ? leaders[0] : leaders[randInt(0, leaders.length - 1)];
+  }
+  let poisoned = null;
+  if (ns.witchAct === "save" && kill && d.potions.save) {
+    d.potions.save = false;
+    d.saved = kill;
+    kill = null;
+  } else if (ns.witchAct?.startsWith("poison:") && d.potions.poison) {
+    const target = ns.witchAct.slice("poison:".length);
+    if (livingIds.has(target)) {
+      d.potions.poison = false;
+      poisoned = target;
+    }
+  }
+  const guard = ns.guardPick;
+  d.lastGuard = guard;
+  if (guard && kill && kill === guard) {
+    d.saved = guard;
+    kill = null;
+  }
+  const deaths = [];
+  if (kill) deaths.push(kill);
+  if (poisoned && !deaths.includes(poisoned)) deaths.push(poisoned);
+  deaths.sort((a, b) => (byId(room, a)?.seat ?? 0) - (byId(room, b)?.seat ?? 0));
+  d.killed = deaths;
+  d.poisoned = poisoned && deaths.includes(poisoned) ? poisoned : null;
+  d.nightState = emptyNight();
+  for (const id of deaths) killPlayer(room, id, "\u591C\u91CC\u51FA\u5C40");
+  for (const id of deaths) {
+    if (roleOf(room, id) !== "wolf") {
+      for (const w of wolves(room)) addScore(room, w.id, 1);
+    } else {
+      for (const p of alive(room)) if (roleOf(room, p.id) !== "wolf") addScore(room, p.id, 1);
+    }
+  }
+  if (deaths.length === 0) {
+    ev(room, "judge", "\u5929\u4EAE\u4E86\uFF0C\u6628\u665A\u662F\u5E73\u5B89\u591C\u3002");
+  } else {
+    ev(
+      room,
+      "judge",
+      `\u5929\u4EAE\u4E86\uFF0C\u6628\u665A ${deaths.map((id) => nameOf(room, id)).join("\u3001")} \u51FA\u5C40\u3002`
+    );
+  }
+  if (d.saved) ev(room, "judge", `${nameOf(room, d.saved)} \u6628\u665A\u88AB\u5B88\u4F4F\u4E86\u3002`);
+  d.order = alive(room).map((p) => p.id);
+  d.cursor = 0;
+  phase(room, "dawn", { turn: 0 });
+  checkWin(room);
+}
+function resolveVote(room) {
+  const d = wolf(room);
+  const tally = {};
+  for (const [voter, target] of Object.entries(d.votes)) {
+    if (!byId(room, voter)?.alive) continue;
+    if (!byId(room, target)?.alive) continue;
+    tally[target] = (tally[target] ?? 0) + 1;
+  }
+  d.tally = tally;
+  let top = 0;
+  for (const n of Object.values(tally)) if (n > top) top = n;
+  const leaders = Object.entries(tally).filter(([, n]) => n === top && n > 0).map(([id]) => id);
+  if (leaders.length === 1) {
+    const out = leaders[0];
+    const role = roleOf(room, out);
+    d.exiled = out;
+    killPlayer(room, out, "\u88AB\u6295\u7968\u653E\u9010");
+    for (const [voter, target] of Object.entries(d.votes)) {
+      if (target !== out) continue;
+      if (role === "wolf" && roleOf(room, voter) !== "wolf") addScore(room, voter, 2);
+      if (role !== "wolf" && roleOf(room, voter) === "wolf") addScore(room, voter, 1);
+    }
+    ev(
+      room,
+      "judge",
+      `${nameOf(room, out)} \u88AB\u6295\u51FA\u53BB\u4E86\uFF0C\u8EAB\u4EFD\u662F\u300C${ROLE_LABEL[role]}\u300D\u3002`
+    );
+  } else {
+    d.exiled = null;
+    ev(room, "judge", "\u7968\u6570\u6253\u5E73\uFF0C\u8FD9\u4E00\u8F6E\u6CA1\u4EBA\u51FA\u5C40\u3002");
+  }
+  phase(room, "exile", { turn: 0 });
+  checkWin(room);
+}
+var werewolfEngine = {
+  id: "werewolf",
+  create(room) {
+    const v = wolfVariant(room.variant);
+    const d = {
+      variant: v.id,
+      roles: {},
+      night: 0,
+      nightState: emptyNight(),
+      killed: [],
+      poisoned: null,
+      saved: null,
+      dead: [],
+      deadRoles: {},
+      order: [],
+      cursor: 0,
+      speeches: {},
+      votes: {},
+      tally: {},
+      exiled: null,
+      win: null,
+      potions: { save: true, poison: true },
+      lastGuard: null,
+      history: []
+    };
+    room.data.werewolf = d;
+  },
+  start(room) {
+    const v = wolfVariant(room.variant);
+    const d = wolf(room);
+    const players = seated(room);
+    const roster = rosterFor(v, players.length);
+    const order = shuffle(players.map((p) => p.id));
+    d.variant = v.id;
+    d.roles = {};
+    order.forEach((id, i) => {
+      d.roles[id] = roster[i] ?? "villager";
+    });
+    for (const p of room.players) {
+      p.alive = true;
+      p.score = 0;
+      p.outReason = null;
+    }
+    d.night = 1;
+    d.nightState = emptyNight();
+    d.killed = [];
+    d.poisoned = null;
+    d.saved = null;
+    d.dead = [];
+    d.deadRoles = {};
+    d.speeches = {};
+    d.votes = {};
+    d.tally = {};
+    d.exiled = null;
+    d.win = null;
+    d.potions = { save: true, poison: true };
+    d.lastGuard = null;
+    d.history = [];
+    d.cursor = 0;
+    d.order = players.map((p) => p.id);
+    room.startedAt = Date.now();
+    room.turn = 0;
+    room.round = 1;
+    ev(room, "judge", `\u72FC\u4EBA\u6740\u5F00\u5C40\uFF1A${v.name} \xB7 ${rosterText(v, players.length)}\u3002\u8EAB\u4EFD\u5DF2\u7ECF\u53D1\u5230\u5404\u81EA\u624B\u673A\u4E0A\u3002`);
+    ev(room, "judge", judge("wolfOpen", {}));
+    phase(room, "night", { ms: NIGHT_MS, round: 1, turn: 0 });
+  },
+  act(room, actor, action, payload) {
+    const d = wolf(room);
+    if (!actor.alive) return;
+    if (room.phase === "night") {
+      const ns = d.nightState;
+      const role = d.roles[actor.id];
+      if (action === "wolfKill" && role === "wolf") {
+        const target = String(payload?.target ?? "");
+        const victim = byId(room, target);
+        if (!victim?.alive || roleOf(room, target) === "wolf") return;
+        ns.wolfVotes[actor.id] = target;
+        if (nightReady(room)) resolveNight(room);
+        return;
+      }
+      if (action === "seerCheck" && role === "seer") {
+        const target = String(payload?.target ?? "");
+        const victim = byId(room, target);
+        if (!victim?.alive || target === actor.id) return;
+        ns.seerPick = target;
+        ns.seerSeen = { id: target, role: roleOf(room, target) };
+        d.history.push({ night: d.night, id: target, role: roleOf(room, target) });
+        if (nightReady(room)) resolveNight(room);
+        return;
+      }
+      if (action === "witchAct" && role === "witch") {
+        const value = String(payload?.value ?? "skip");
+        if (value === "save") {
+          if (!d.potions.save) return;
+          ns.witchAct = "save";
+        } else if (value.startsWith("poison:")) {
+          if (!d.potions.poison) return;
+          const target = value.slice("poison:".length);
+          const victim = byId(room, target);
+          if (!victim?.alive) return;
+          ns.witchAct = value;
+        } else {
+          ns.witchAct = "skip";
+        }
+        if (nightReady(room)) resolveNight(room);
+        return;
+      }
+      if (action === "guardPick" && role === "guard") {
+        const target = String(payload?.target ?? "");
+        const victim = byId(room, target);
+        if (!victim?.alive) return;
+        if (d.lastGuard === target) return;
+        ns.guardPick = target;
+        if (nightReady(room)) resolveNight(room);
+        return;
+      }
+      return;
+    }
+    if (room.phase === "speak") {
+      if (action !== "speak") return;
+      if (currentSpeaker2(room) !== actor.id) return;
+      const text = sanitize(payload?.text, 80);
+      if (!text) return;
+      d.speeches[actor.id] = text;
+      advanceSpeak(room);
+      return;
+    }
+    if (room.phase === "vote") {
+      if (action !== "vote") return;
+      const target = String(payload?.target ?? "");
+      const victim = byId(room, target);
+      if (!victim?.alive || target === actor.id) return;
+      d.votes[actor.id] = target;
+      const living = alive(room).map((p) => p.id);
+      if (living.every((id) => d.votes[id] !== void 0)) resolveVote(room);
+    }
+  },
+  next(room, actor) {
+    const d = wolf(room);
+    if (room.phase === "lobby") {
+      this.start(room);
+      return;
+    }
+    if (room.phase === "night") {
+      resolveNight(room);
+      return;
+    }
+    if (room.phase === "dawn") {
+      if (d.win) {
+        phase(room, "over");
+        return;
+      }
+      startSpeak(room);
+      return;
+    }
+    if (room.phase === "speak") {
+      const speaker = currentSpeaker2(room);
+      if (speaker && d.speeches[speaker] === void 0) {
+        d.speeches[speaker] = "\uFF08\u8DF3\u8FC7\uFF09";
+        ev(room, "judge", judge("hurry", { name: nameOf(room, speaker) }));
+      }
+      advanceSpeak(room);
+      return;
+    }
+    if (room.phase === "vote") {
+      resolveVote(room);
+      return;
+    }
+    if (room.phase === "exile") {
+      if (d.win) {
+        phase(room, "over");
+        return;
+      }
+      room.round += 1;
+      startNight(room);
+    }
+  },
+  tick(room, now) {
+    const d = wolf(room);
+    if (room.deadlineAt === null || now < room.deadlineAt) return;
+    if (room.phase === "night") {
+      resolveNight(room);
+      return;
+    }
+    if (room.phase === "speak") {
+      const speaker = currentSpeaker2(room);
+      if (speaker && d.speeches[speaker] === void 0) {
+        d.speeches[speaker] = "\uFF08\u8D85\u65F6\uFF09";
+        ev(room, "judge", judge("timeout", { name: nameOf(room, speaker) }));
+      }
+      advanceSpeak(room);
+      return;
+    }
+    if (room.phase === "vote") {
+      resolveVote(room);
+    }
+  },
+  publicData(room) {
+    const d = wolf(room);
+    const v = wolfVariant(room.variant || d.variant);
+    return {
+      werewolf: {
+        variant: v.id,
+        name: v.name,
+        roster: rosterText(v, room.phase === "lobby" ? Math.max(v.seats, room.players.length) : room.players.length),
+        seats: v.seats,
+        night: d.night,
+        dead: d.dead,
+        deadRoles: d.deadRoles,
+        killed: d.killed,
+        poisoned: d.poisoned,
+        saved: d.saved,
+        order: d.order,
+        cursor: d.cursor,
+        speeches: d.speeches,
+        votes: room.phase === "exile" || room.phase === "over" ? d.votes : {},
+        tally: d.tally,
+        exiled: d.exiled,
+        winner: d.win,
+        aliveCount: alive(room).length,
+        roundUnit: room.phase === "night" ? "\u591C" : "\u5929"
+      }
+    };
+  },
+  secretFor(room, me) {
+    const d = wolf(room);
+    const role = d.roles[me.id];
+    if (!role) return {};
+    const out = {
+      role,
+      label: ROLE_LABEL[role],
+      desc: ROLE_DESC[role]
+    };
+    if (role === "wolf") {
+      out.teammates = room.players.filter((p) => p.id !== me.id && d.roles[p.id] === "wolf").map((p) => ({ id: p.id, name: p.name }));
+    }
+    if (role === "seer") out.history = d.history;
+    if (role === "witch") out.potions = d.potions;
+    if (role === "guard") out.lastGuard = d.lastGuard;
+    return out;
+  },
+  refereeExtra(_room) {
+    return {
+      note: "\u72FC\u4EBA\u6740\u7531\u7CFB\u7EDF\u81EA\u52A8\u7ED3\u7B97\uFF0C\u88C1\u5224\u4E0D\u7528\u52A8\u624B\uFF1B\u591C\u91CC\u6CA1\u4EA4\u7684\u624B\u673A\u7AEF\u5230\u70B9\u4F1A\u88AB\u81EA\u52A8\u8DF3\u8FC7\u3002"
+    };
+  },
+  needs(room, me, _view) {
+    const d = wolf(room);
+    const base = {
+      prompt: null,
+      input: "none",
+      inputHint: "",
+      submitted: false,
+      hostHint: hostHint(room)
+    };
+    if (!me) return base;
+    if (!me.alive) return { ...base, prompt: "\u4F60\u5DF2\u7ECF\u51FA\u5C40\u4E86\uFF0C\u5B89\u9759\u770B\u7740\u5C31\u884C\u3002" };
+    if (room.phase === "night") {
+      const ns = d.nightState;
+      const role = d.roles[me.id];
+      if (hasActed(room, me.id) && role !== "villager") {
+        return { ...base, prompt: "\u4ECA\u665A\u5DF2\u7ECF\u884C\u52A8\u8FC7\u4E86\uFF0C\u95ED\u773C\u7B49\u5929\u4EAE\u3002", submitted: true };
+      }
+      if (role === "wolf") {
+        const targets = alive(room).filter((p) => roleOf(room, p.id) !== "wolf");
+        return {
+          ...base,
+          prompt: "\u4ECA\u665A\u5200\u8C01\uFF1F\u548C\u961F\u53CB\u5404\u70B9\u4E00\u4E0B\uFF0C\u7968\u591A\u7684\u90A3\u4E2A\u6B7B\u3002",
+          input: "pick",
+          inputHint: "\u9009\u4E00\u4E2A\u76EE\u6807",
+          valueKey: "target",
+          options: targets.map((p) => ({ value: p.id, label: `${p.seat} \u53F7 \xB7 ${p.name}` }))
+        };
+      }
+      if (role === "seer") {
+        return {
+          ...base,
+          prompt: "\u4ECA\u665A\u67E5\u8C01\uFF1F\u67E5\u5B8C\u4F60\u4F1A\u77E5\u9053\u4ED6\u662F\u72FC\u4EBA\u8FD8\u662F\u597D\u4EBA\u3002",
+          input: "pick",
+          inputHint: "\u9009\u4E00\u4E2A\u76EE\u6807",
+          valueKey: "target",
+          options: aliveTargets(room, [me.id]).map((p) => ({
+            value: p.id,
+            label: `${p.seat} \u53F7 \xB7 ${p.name}`
+          }))
+        };
+      }
+      if (role === "witch") {
+        const options = [];
+        const victim = Object.values(ns.wolfVotes)[0];
+        if (d.potions.save) {
+          options.push({
+            value: "save",
+            label: "\u7528\u89E3\u836F",
+            hint: victim ? "\u6551\u4E0B\u4ECA\u665A\u88AB\u5200\u7684\u4EBA" : "\u4ECA\u665A\u8FD8\u6CA1\u6709\u4EBA\u88AB\u5200"
+          });
+        }
+        if (d.potions.poison) {
+          for (const p of aliveTargets(room, [me.id])) {
+            options.push({ value: `poison:${p.id}`, label: `\u6BD2 ${p.seat} \u53F7 \xB7 ${p.name}` });
+          }
+        }
+        options.push({ value: "skip", label: "\u4ECA\u665A\u4E0D\u7528\u836F" });
+        return {
+          ...base,
+          prompt: "\u5973\u5DEB\u884C\u52A8\uFF1A\u4E00\u74F6\u89E3\u836F\u4E00\u74F6\u6BD2\u836F\uFF0C\u5404\u4E00\u6B21\uFF0C\u4E5F\u53EF\u4EE5\u4E0D\u7528\u3002",
+          input: "pick",
+          inputHint: "\u9009\u4E00\u4E2A\u52A8\u4F5C",
+          valueKey: "value",
+          options
+        };
+      }
+      if (role === "guard") {
+        return {
+          ...base,
+          prompt: "\u4ECA\u665A\u5B88\u8C01\uFF1F\u88AB\u5B88\u7684\u4EBA\u4ECA\u665A\u5200\u4E0D\u6B7B\uFF0C\u4F46\u4E0D\u80FD\u8FDE\u7740\u4E24\u665A\u5B88\u540C\u4E00\u4E2A\u4EBA\u3002",
+          input: "pick",
+          inputHint: "\u9009\u4E00\u4E2A\u76EE\u6807",
+          valueKey: "target",
+          options: aliveTargets(room, [d.lastGuard ?? ""]).map((p) => ({
+            value: p.id,
+            label: `${p.seat} \u53F7 \xB7 ${p.name}`
+          }))
+        };
+      }
+      return { ...base, prompt: "\u591C\u91CC\u95ED\u773C\uFF0C\u5929\u4EAE\u518D\u8BF4\u3002" };
+    }
+    if (room.phase === "dawn") {
+      return {
+        ...base,
+        prompt: "\u5929\u4EAE\u4E86\u3002",
+        hostHint: d.win ? "\u6309\u300C\u4E0B\u4E00\u6B65\u300D\u7ED3\u7B97" : "\u6309\u300C\u4E0B\u4E00\u6B65\u300D\u8FDB\u5165\u767D\u5929\u53D1\u8A00"
+      };
+    }
+    if (room.phase === "speak") {
+      if (currentSpeaker2(room) === me.id) {
+        return {
+          ...base,
+          prompt: "\u8F6E\u5230\u4F60\u53D1\u8A00\u4E86\uFF1A\u8BF4\u70B9\u6709\u7528\u7684\uFF0C\u522B\u628A\u81EA\u5DF1\u7684\u8EAB\u4EFD\u8BF4\u6F0F\u3002",
+          input: "text",
+          inputHint: "\u4E00\u53E5\u8BDD\u4E5F\u884C\uFF0C\u522B\u6C89\u9ED8"
+        };
+      }
+      return { ...base, prompt: `\u7B49 ${nameOf(room, currentSpeaker2(room))} \u8BF4\u5B8C\u3002` };
+    }
+    if (room.phase === "vote") {
+      if (d.votes[me.id] !== void 0) return { ...base, prompt: "\u7968\u5DF2\u7ECF\u6295\u51FA\u53BB\u4E86\u3002", submitted: true };
+      return {
+        ...base,
+        prompt: "\u6295\u4E00\u4E2A\u4F60\u6700\u6000\u7591\u7684\u4EBA\uFF0C\u4E0D\u80FD\u6295\u81EA\u5DF1\u3002",
+        input: "pick",
+        inputHint: "\u70B9\u4E00\u4E0B\u5C31\u6295\u51FA\u53BB\u4E86",
+        valueKey: "target",
+        options: aliveTargets(room, [me.id]).map((p) => ({
+          value: p.id,
+          label: `${p.seat} \u53F7 \xB7 ${p.name}`
+        }))
+      };
+    }
+    if (room.phase === "exile") {
+      return {
+        ...base,
+        prompt: d.exiled ? `${nameOf(room, d.exiled)} \u88AB\u653E\u9010\u4E86\u3002` : "\u5E73\u7968\uFF0C\u8FD9\u4E00\u8F6E\u6CA1\u4EBA\u51FA\u5C40\u3002",
+        hostHint: d.win ? "\u6309\u300C\u4E0B\u4E00\u6B65\u300D\u7ED3\u7B97" : "\u6309\u300C\u4E0B\u4E00\u6B65\u300D\u8FDB\u5165\u4E0B\u4E00\u591C"
+      };
+    }
+    return base;
+  },
+  finish(room) {
+    const d = wolf(room);
+    const v = wolfVariant(d.variant);
+    const lines = [`\u6A21\u5F0F\uFF1A${v.name} \xB7 ${rosterText(v, room.players.length)}`];
+    if (d.win === "village") lines.push("\u72FC\u4EBA\u5168\u90E8\u51FA\u5C40\uFF0C\u597D\u4EBA\u8D62\u4E0B\u8FD9\u4E00\u5C40\u3002");
+    if (d.win === "wolf") lines.push("\u72FC\u4EBA\u6570\u91CF\u8FFD\u5E73\u4E86\u597D\u4EBA\uFF0C\u72FC\u4EBA\u8D62\u4E0B\u8FD9\u4E00\u5C40\u3002");
+    lines.push(
+      `\u4E00\u5171\u6253\u4E86 ${Math.max(1, room.round)} \u4E2A\u665A\u4E0A\uFF0C\u51FA\u5C40\u987A\u5E8F\uFF1A${d.dead.map((id) => `${nameOf(room, id)}\uFF08${ROLE_LABEL[d.deadRoles[id]]}\uFF09`).join("\u3001") || "\u6CA1\u6709\u4EBA\u51FA\u5C40"}\u3002`
+    );
+    const winners = room.players.slice().sort((a, b) => b.score - a.score).map((p) => ({
+      name: `${p.name} \xB7 ${ROLE_LABEL[d.roles[p.id] ?? "villager"]}`,
+      score: p.score
+    }));
+    return {
+      title: d.win === "wolf" ? "\u72FC\u4EBA\u8D62\u4E86" : d.win === "village" ? "\u597D\u4EBA\u8D62\u4E86" : "\u8FD9\u4E00\u5C40\u6CA1\u6253\u5B8C",
+      lines,
+      winners,
+      verdict: d.win === "wolf" ? "\u72FC\u4EBA\u6491\u5230\u6700\u540E\uFF0C\u597D\u4EBA\u8FD9\u8FB9\u4E0B\u6B21\u8BB0\u5F97\u522B\u6025\u7740\u4E92\u6295\u3002" : d.win === "village" ? "\u72FC\u4EBA\u88AB\u4E00\u4E2A\u4E2A\u6295\u51FA\u53BB\uFF0C\u597D\u4EBA\u7684\u76F4\u89C9\u5F88\u51C6\u3002" : "\u8FD9\u4E00\u5C40\u6CA1\u6253\u5B8C\uFF0C\u4E0B\u6B21\u4EBA\u9F50\u4E86\u518D\u6765\u4E00\u5C40\u3002"
+    };
+  }
+};
+function hostHint(room) {
+  const d = wolf(room);
+  const phaseName = room.phase === "night" ? `\u7B2C ${d.night} \u591C` : room.phase === "dawn" ? "\u5929\u521A\u4EAE" : room.phase === "speak" ? `\u7B2C ${d.night} \u5929\u53D1\u8A00` : room.phase === "vote" ? "\u6295\u7968\u4E2D" : room.phase === "exile" ? "\u653E\u9010\u7ED3\u679C" : "";
+  if (!phaseName) return "\u4EBA\u9F50\u4E86\u70B9\u300C\u5F00\u59CB\u300D\u3002";
+  return `${phaseName} \xB7 ${alive(room).length} \u4EBA\u8FD8\u6D3B\u7740\uFF0C\u6309\u300C\u4E0B\u4E00\u6B65\u300D\u53EF\u4EE5\u8BA9\u5361\u4F4F\u7684\u73AF\u8282\u5F80\u524D\u63A8\u8FDB\u3002`;
+}
+
 // src/shared/engine/index.ts
 var ENGINES = {
   spy: spyEngine,
@@ -4056,7 +4897,8 @@ var ENGINES = {
   seven: sevenEngine,
   story: storyEngine,
   never: neverEngine,
-  mime: mimeEngine
+  mime: mimeEngine,
+  werewolf: werewolfEngine
 };
 var engineFor = (gameId) => ENGINES[gameId] ?? null;
 
@@ -4147,8 +4989,12 @@ var CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 var TOKEN_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 var PLAYER_OFFLINE_MS = 45e3;
 var PRESENCE_WRITE_MS = 1e4;
-var CHAT_COOLDOWN_MS = 2e3;
+var SAY_COOLDOWN_MS = 2e3;
 var CAS_ATTEMPTS = 4;
+var CHAT_MAX_LEN = 200;
+var CHAT_KEEP = 120;
+var CHAT_VIEW = 60;
+var CHAT_COOLDOWN_MS = 700;
 var store = memoryStore();
 function useRoomStore(next) {
   store = next;
@@ -4214,6 +5060,7 @@ function advance2(room, now) {
       };
     }
   }
+  syncSpeakTimer(room, now);
 }
 async function createRoom(input) {
   const meta = GAME_BY_ID[input.gameId];
@@ -4232,7 +5079,9 @@ async function createRoom(input) {
     lastChatAt: 0,
     score: 0,
     alive: true,
-    outReason: null
+    outReason: null,
+    avatar: sanitizeAvatar(input.hostAvatar, 1),
+    speakMs: 0
   };
   const room = {
     code,
@@ -4240,6 +5089,7 @@ async function createRoom(input) {
     updatedAt: now,
     seq: 1,
     gameId: input.gameId,
+    variant: input.variant ?? "",
     profile: input.profile,
     judgeMode: meta.judgeModes.includes(input.judgeMode) ? input.judgeMode : meta.judgeModes[0],
     refereeId: null,
@@ -4250,9 +5100,13 @@ async function createRoom(input) {
     startedAt: null,
     deadlineAt: null,
     pausedMs: 0,
+    speakSeconds: null,
+    speakingId: null,
+    turnStartedAt: null,
     players: [host],
     data: {},
     events: [],
+    chat: [],
     finished: null
   };
   engine.create(room);
@@ -4261,7 +5115,7 @@ async function createRoom(input) {
   return { room, host };
 }
 var loadRoom = (code) => store.load(normalize(code));
-async function joinRoom(code, name) {
+async function joinRoom(code, name, avatar) {
   const clean = sanitizeName(name);
   if (!clean) return null;
   const result = await mutateRoom(normalize(code), (room) => {
@@ -4282,7 +5136,9 @@ async function joinRoom(code, name) {
       lastChatAt: 0,
       score: 0,
       alive: true,
-      outReason: null
+      outReason: null,
+      avatar: sanitizeAvatar(avatar, room.players.length + 1),
+      speakMs: 0
     };
     room.players.push(player);
     room.seq += 1;
@@ -4303,9 +5159,18 @@ function touch(room) {
 }
 function configureRoom(room, opts) {
   const meta = GAME_BY_ID[room.gameId];
-  if (opts.hostPlays !== void 0) {
-    if (room.phase !== "lobby") return "\u5F00\u5C40\u4E4B\u540E\u5C31\u4E0D\u80FD\u518D\u6539\u623F\u4E3B\u662F\u5426\u53C2\u52A0\u4E86";
-    room.hostPlays = !!opts.hostPlays;
+  if (opts.variant !== void 0) {
+    if (room.phase !== "lobby") return "\u5F00\u5C40\u4E4B\u540E\u4E0D\u80FD\u6362\u6A21\u5F0F\u4E86";
+    room.variant = String(opts.variant || "");
+  }
+  if (opts.speakSeconds !== void 0) {
+    if (opts.speakSeconds === null) {
+      room.speakSeconds = null;
+    } else {
+      const n = Math.round(Number(opts.speakSeconds));
+      if (!Number.isFinite(n)) return "\u53D1\u8A00\u65F6\u957F\u5F97\u662F\u4E2A\u6570\u5B57";
+      room.speakSeconds = Math.max(10, Math.min(300, n));
+    }
   }
   if (opts.judgeMode) {
     if (!meta.judgeModes.includes(opts.judgeMode)) return `${meta.name} \u4E0D\u652F\u6301\u8FD9\u79CD\u88C1\u5224\u65B9\u5F0F`;
@@ -4347,10 +5212,34 @@ function startRoom(room, hostToken) {
   touch(room);
   return null;
 }
+function sendChat(room, actor, payload) {
+  const text = String(payload?.text ?? "").replace(/\s+/g, " ").trim().slice(0, CHAT_MAX_LEN);
+  if (!text) return "\u8BF4\u70B9\u4EC0\u4E48\u518D\u53D1";
+  const chat = room.chat ?? (room.chat = []);
+  const now = Date.now();
+  for (let i = chat.length - 1; i >= 0; i--) {
+    if (chat[i].by === actor.id) {
+      if (now - chat[i].at < CHAT_COOLDOWN_MS) return "\u624B\u901F\u592A\u5FEB\u5566\uFF0C\u7F13\u4E00\u79D2\u518D\u53D1";
+      break;
+    }
+  }
+  room.seq += 1;
+  chat.push({
+    id: room.seq,
+    by: actor.id,
+    name: actor.name,
+    avatar: sanitizeAvatar(actor.avatar, actor.seat),
+    text,
+    at: now
+  });
+  if (chat.length > CHAT_KEEP) chat.splice(0, chat.length - CHAT_KEEP);
+  touch(room);
+  return null;
+}
 function say(room, actor, payload) {
   if (!isQuickPhrase(payload?.text)) return "\u53EA\u80FD\u53D1\u5217\u8868\u91CC\u7684\u8BDD";
   const now = Date.now();
-  if (now - actor.lastChatAt < CHAT_COOLDOWN_MS) return null;
+  if (now - actor.lastChatAt < SAY_COOLDOWN_MS) return null;
   actor.lastChatAt = now;
   ev(room, "chat", `${actor.name}\uFF1A${payload.text}`);
   touch(room);
@@ -4361,9 +5250,24 @@ function act(room, token, action, payload) {
   const actor = room.players.find((p) => p.id === token);
   if (!engine || !actor) return "\u8EAB\u4EFD\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u52A0\u5165\u623F\u95F4";
   if (!/^[a-zA-Z][a-zA-Z0-9]{1,24}$/.test(action)) return "\u672A\u77E5\u64CD\u4F5C";
+  if (action === "chat") return sendChat(room, actor, payload);
+  if (action === "avatar") {
+    actor.avatar = sanitizeAvatar(payload?.avatar, actor.seat);
+    touch(room);
+    return null;
+  }
   if (action === "say") return say(room, actor, payload);
+  if (action === "mic") {
+    actor.micOn = !!payload?.on;
+    if (!actor.micOn && room.voice?.length) {
+      room.voice = room.voice.filter((s) => s.from !== actor.id && s.to !== actor.id);
+    }
+    touch(room);
+    return null;
+  }
   engine.act(room, actor, action, payload ?? {});
   touch(room);
+  syncSpeakTimer(room, Date.now());
   return null;
 }
 function nextStep(room, token) {
@@ -4371,9 +5275,14 @@ function nextStep(room, token) {
   if (!engine) return "\u6E38\u620F\u5F15\u64CE\u7F3A\u5931";
   const actor = token ? room.players.find((p) => p.id === token) ?? null : null;
   if (token && !actor) return "\u8EAB\u4EFD\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u52A0\u5165\u623F\u95F4";
-  if (room.phase === "lobby") return startRoom(room, actor?.id ?? "");
+  if (room.phase === "lobby") {
+    const err = startRoom(room, actor?.id ?? "");
+    syncSpeakTimer(room, Date.now());
+    return err;
+  }
   engine.next(room, actor);
   touch(room);
+  syncSpeakTimer(room, Date.now());
   return null;
 }
 function isRefereeViewer(room, me) {
@@ -4403,6 +5312,9 @@ function buildView(room, token, asWatcher = false) {
     turn: room.turn,
     deadlineAt: room.deadlineAt,
     serverNow: now,
+    speakSeconds: room.speakSeconds ?? null,
+    speakingId: room.speakingId ?? null,
+    turnStartedAt: room.turnStartedAt ?? null,
     judgeMode: room.judgeMode,
     refereeId: room.refereeId,
     hostPlays: room.hostPlays,
@@ -4410,6 +5322,7 @@ function buildView(room, token, asWatcher = false) {
     me: me ? players.find((p) => p.id === me.id) ?? null : null,
     players,
     events: room.events.slice(-14),
+    chat: (room.chat ?? []).slice(-CHAT_VIEW),
     finished: room.finished,
     publicData: engine.publicData(room),
     secret: me && !asWatcher && !spectatingHost ? engine.secretFor(room, me) : {},
@@ -4426,6 +5339,50 @@ function markSeen(room, token, now = Date.now()) {
   p.lastSeen = now;
 }
 var roomCount = () => store.count();
+
+// src/shared/voice.ts
+var VOICE_MAX_BATCH = 6;
+var VOICE_MAX_DATA = 6e3;
+var VOICE_TTL_MS = 6e4;
+var VOICE_KEEP = 120;
+
+// server/voice.ts
+var KINDS = ["offer", "answer", "ice"];
+function postVoice(room, token, payload) {
+  const actor = room.players.find((p) => p.id === token);
+  if (!actor) return "\u8EAB\u4EFD\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u52A0\u5165\u623F\u95F4";
+  if (!actor.micOn) return "\u5148\u5F00\u9EA6\u518D\u8FDE\u63A5\u8BED\u97F3";
+  const list = Array.isArray(payload?.signals) ? payload.signals.slice(0, VOICE_MAX_BATCH) : [];
+  if (!list.length) return null;
+  const checked = [];
+  for (const s of list) {
+    if (!KINDS.includes(s?.kind)) return "\u4E0D\u8BA4\u8BC6\u7684\u8BED\u97F3\u4FE1\u4EE4";
+    const to = String(s?.to ?? "");
+    if (to === token || !room.players.some((p) => p.id === to)) return "\u8BED\u97F3\u4FE1\u4EE4\u53D1\u7ED9\u4E86\u4E0D\u5728\u623F\u95F4\u91CC\u7684\u4EBA";
+    const data = s?.data;
+    if (!data || typeof data !== "object" || Array.isArray(data)) return "\u8BED\u97F3\u4FE1\u4EE4\u683C\u5F0F\u4E0D\u5BF9";
+    if (JSON.stringify(data).length > VOICE_MAX_DATA) return "\u8BED\u97F3\u4FE1\u4EE4\u592A\u5927\u4E86";
+    checked.push({ to, kind: s.kind, data });
+  }
+  const now = Date.now();
+  const box = room.voice ?? (room.voice = []);
+  for (const s of checked) {
+    room.voiceSeq = (room.voiceSeq ?? 0) + 1;
+    box.push({ id: room.voiceSeq, from: token, to: s.to, kind: s.kind, data: s.data, at: now });
+  }
+  const cutoff = now - VOICE_TTL_MS;
+  while (box.length && (box.length > VOICE_KEEP || box[0].at < cutoff)) box.shift();
+  touch(room);
+  return null;
+}
+function readVoice(room, token, since) {
+  if (!room.players.some((p) => p.id === token)) return "\u8EAB\u4EFD\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u52A0\u5165\u623F\u95F4";
+  const now = Date.now();
+  const signals = (room.voice ?? []).filter(
+    (s) => s.to === token && s.id > since && now - s.at < VOICE_TTL_MS
+  );
+  return { signals, serverNow: now };
+}
 
 // server/api.ts
 var ok = (body) => ({ status: 200, body });
@@ -4457,8 +5414,10 @@ async function createRoomRoute(b) {
   const input = {
     gameId: String(b.gameId),
     hostName: sanitizeName(b.hostName ?? ""),
+    hostAvatar: typeof b.hostAvatar === "string" ? b.hostAvatar.slice(0, 24) : void 0,
     judgeMode: b.judgeMode === "human" ? "human" : "ai",
-    profile: clampProfile(b.profile)
+    profile: clampProfile(b.profile),
+    variant: typeof b.variant === "string" ? b.variant.slice(0, 24) : void 0
   };
   try {
     const { room, host } = await createRoom(input);
@@ -4470,7 +5429,8 @@ async function createRoomRoute(b) {
 }
 async function joinRoute(b) {
   const code = normalize(b?.code);
-  const result = await joinRoom(code, String(b?.name ?? ""));
+  const avatar = typeof b?.avatar === "string" ? b.avatar.slice(0, 24) : void 0;
+  const result = await joinRoom(code, String(b?.name ?? ""), avatar);
   if (result) return ok({ code: result.room.code, token: result.player.id, view: buildView(result.room, result.player.id) });
   const loaded = await loadRoom(code);
   if (!loaded) return bad(404, "\u627E\u4E0D\u5230\u8FD9\u4E2A\u623F\u95F4\uFF0C\u68C0\u67E5\u4E00\u4E0B\u623F\u95F4\u53F7");
@@ -4519,6 +5479,17 @@ async function configureRoute(code, token, opts) {
   if (result.value.denied) return bad(403, "\u53EA\u6709\u623F\u4E3B\u80FD\u8BBE\u7F6E\u88C1\u5224");
   return ok({ error: result.value.error, view: buildView(result.room, token) });
 }
+async function voiceGetRoute(code, token, since) {
+  const loaded = await loadRoom(normalize(code));
+  if (!loaded) return bad(404, "\u623F\u95F4\u4E0D\u5B58\u5728\u6216\u5DF2\u7ED3\u675F");
+  const r = readVoice(loaded.room, token ?? "", since);
+  return typeof r === "string" ? bad(403, r) : ok(r);
+}
+async function voicePostRoute(code, token, payload) {
+  const result = await mutateRoom(normalize(code), (room) => postVoice(room, token, payload));
+  if (!result.ok) return bad(404, result.reason === "conflict" ? "\u8BED\u97F3\u4FE1\u4EE4\u6CA1\u5199\u4E0A\uFF0C\u518D\u8BD5\u4E00\u6B21" : "\u623F\u95F4\u4E0D\u5B58\u5728\u6216\u5DF2\u7ED3\u675F");
+  return ok({ error: result.value });
+}
 
 // server/function.ts
 var json = (r) => Response.json(r.body, { status: r.status });
@@ -4554,19 +5525,24 @@ function application(deps) {
     if (room && request.method === "GET") {
       return json(await viewRoute(normalize(room[1]), get("token"), get("watch") === "1"));
     }
-    const sub = path.match(/^\/api\/rooms\/([^/]+)\/(action|next|configure)$/);
+    const voice = path.match(/^\/api\/rooms\/([^/]+)\/voice$/);
+    if (voice && request.method === "GET") {
+      return json(await voiceGetRoute(normalize(voice[1]), get("token"), Number(get("since") ?? 0) || 0));
+    }
+    const sub = path.match(/^\/api\/rooms\/([^/]+)\/(action|next|configure|voice)$/);
     if (sub) {
       const code = normalize(sub[1]);
       const body = await readJson(request);
       const token = String(body?.token ?? "");
       if (sub[2] === "action") return json(await actionRoute(code, token, String(body?.action ?? ""), body?.payload));
       if (sub[2] === "next") return json(await nextRoute(code, token, !!body?.force));
+      if (sub[2] === "voice") return json(await voicePostRoute(code, token, body));
       return json(
         await configureRoute(code, token, {
           judgeMode: body?.judgeMode === void 0 ? void 0 : body.judgeMode === "human" ? "human" : "ai",
           refereeId: body?.refereeId === void 0 ? void 0 : body.refereeId === null ? null : String(body.refereeId),
-          hostPlays: body?.hostPlays === void 0 ? void 0 : !!body.hostPlays,
-          game: body?.game
+          variant: body?.variant === void 0 ? void 0 : String(body.variant),
+          speakSeconds: body?.speakSeconds === void 0 ? void 0 : body.speakSeconds === null ? null : Number(body.speakSeconds)
         })
       );
     }

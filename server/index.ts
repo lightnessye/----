@@ -13,6 +13,8 @@ import {
   metaBody,
   nextRoute,
   viewRoute,
+  voiceGetRoute,
+  voicePostRoute,
   type ApiResponse,
 } from './api'
 
@@ -66,6 +68,14 @@ api.post('/join', route((req) => joinRoute(req.body ?? {})))
 api.get(
   '/rooms/:code',
   route((req) => viewRoute(code(req), token(req), req.query.watch === '1')),
+)
+api.get(
+  '/rooms/:code/voice',
+  route((req) => voiceGetRoute(code(req), token(req), Number(req.query.since ?? 0) || 0)),
+)
+api.post(
+  '/rooms/:code/voice',
+  route((req) => voicePostRoute(code(req), String(req.body?.token ?? ''), req.body)),
 )
 api.post(
   '/rooms/:code/action',
