@@ -87,6 +87,12 @@ api.post(
             ? null
             : String(req.body.refereeId),
       variant: req.body?.variant === undefined ? undefined : String(req.body.variant),
+      speakSeconds:
+        req.body?.speakSeconds === undefined
+          ? undefined
+          : req.body.speakSeconds === null
+            ? null
+            : Number(req.body.speakSeconds),
     }),
   ),
 )

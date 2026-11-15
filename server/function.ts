@@ -72,6 +72,8 @@ export function application(deps: { db: any; BackendError: new (code: string, st
           judgeMode: body?.judgeMode === undefined ? undefined : body.judgeMode === 'human' ? 'human' : 'ai',
           refereeId: body?.refereeId === undefined ? undefined : body.refereeId === null ? null : String(body.refereeId),
           variant: body?.variant === undefined ? undefined : String(body.variant),
+          speakSeconds:
+            body?.speakSeconds === undefined ? undefined : body.speakSeconds === null ? null : Number(body.speakSeconds),
         }),
       )
     }

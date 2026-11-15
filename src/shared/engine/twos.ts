@@ -2,7 +2,7 @@ import { TWOS_ANGLES } from '../content'
 import { judge, rankByScore } from '../judge'
 import type { FinalResult, Player, Room, RoomView, TwosCard, ViewNeeds } from '../types'
 import type { GameEngine } from './contract'
-import { addScore, byId, clip, ev, nameOf, phase, sanitize, seated, shuffle, twos } from './util'
+import { addScore, byId, clip, ev, nameOf, phase, sanitize, seated, shuffle, speakLimitMs, twos } from './util'
 
 const WRITE_MS = 90_000
 const VOTE_MS = 90_000
@@ -60,7 +60,7 @@ function enterShow(room: Room, from: number, prelude: string) {
   }
   room.round = d.cursor + 1
   if (!d.votes[id]) d.votes[id] = {}
-  phase(room, 'show', { ms: VOTE_MS })
+  phase(room, 'show', { ms: speakLimitMs(room, VOTE_MS) })
   if (prelude) ev(room, 'info', prelude)
   ev(room, 'info', `现在公开 ${nameOf(room, id)} 的三条，其他人猜哪一条是编的。`)
 }

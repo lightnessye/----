@@ -3,7 +3,8 @@ import { configure } from '../api'
 import { useRoom } from '../hooks/useRoom'
 import { useShareBase } from '../hooks/useShareBase'
 import { uiFor } from '../games'
-import { JudgeBadge, QrImage, Seats, Scoreboard, Ticker, Timer } from '../ui/common'
+import { JudgeBadge, QrImage, Seats, Scoreboard, SpeakBoard, Ticker, Timer, fmtSpeak } from '../ui/common'
+import { ChatPanel } from '../ui/ChatPanel'
 import { StageView } from '../ui/StageView'
 import { RefereeConsole } from '../ui/RefereeConsole'
 import { joinHref, phoneHref, shareJoinHref } from '../route'
@@ -64,9 +65,15 @@ export function Host({ code, token, watch }: { code: string; token: string | nul
           <div className="stage-body">
             <div className="stage-main">
               <StageView model={model} />
-              {(view.phase === 'describe' || view.phase === 'run' || view.phase === 'hunt') && (
+              {['describe', 'speak', 'show', 'run', 'hunt'].includes(view.phase) && (
                 <div style={{ marginTop: 22, maxWidth: 420 }}>
                   <Timer view={view} now={now} secondsLeft={secondsLeft} />
+                  {['describe', 'speak', 'show', 'run'].includes(view.phase) && (
+                    <p className="dim" style={{ marginTop: 8 }}>
+                      每人发言上限 {view.speakSeconds != null ? `${view.speakSeconds} 秒` : '默认'}
+                      {view.speakingId ? ' · 计时中' : ''}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -106,6 +113,7 @@ export function Host({ code, token, watch }: { code: string; token: string | nul
 
             <div className="stage-side">
               {!watch && <RefereeConsole view={view} run={run} />}
+              {!watch && <SpeakLimit view={view} token={token} />}
               <div className="panel">
                 <div className="h">裁判播报</div>
                 <Ticker events={view.events} limit={9} />
@@ -114,6 +122,12 @@ export function Host({ code, token, watch }: { code: string; token: string | nul
                 <div className="h">在场玩家</div>
                 <Seats view={view} turnId={ui.turnId?.(view) ?? null} compact />
               </div>
+              <SpeakBoard view={view} now={now} />
+              <ChatPanel
+                view={view}
+                onSend={watch ? undefined : (t) => run('chat', { text: t })}
+                height={240}
+              />
               {view.judgeMode === 'ai' && (
                 <div className="panel">
                   <div className="h">分数</div>
@@ -133,6 +147,7 @@ function Lobby({
   view,
   token,
   step,
+  run,
   now,
 }: {
   view: RoomView
@@ -299,6 +314,8 @@ function Lobby({
           </div>
         )}
 
+        <SpeakLimit view={view} token={token} />
+
         {err && <div className="banner err">{err}</div>}
         {needReferee && <div className="banner info">真人裁判模式还差一步：上面选一个裁判。</div>}
 
@@ -348,7 +365,66 @@ function Lobby({
           <div className="h">进场记录</div>
           <Ticker events={view.events} limit={6} />
         </div>
+        <ChatPanel view={view} onSend={(t) => run('chat', { text: t })} height={220} />
       </div>
+    </div>
+  )
+}
+
+function SpeakLimit({ view, token }: { view: RoomView; token: string | null }) {
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const [custom, setCustom] = useState('')
+  const cur = view.speakSeconds
+  const presets: (number | null)[] = [null, 30, 60, 90, 120]
+  const set = async (v: number | null) => {
+    if (!token || busy) return
+    setBusy(true)
+    const r = await configure(view.code, token, { speakSeconds: v })
+    setErr(r.error ?? null)
+    setBusy(false)
+  }
+  return (
+    <div className="panel">
+      <div className="h">每人发言时长</div>
+      <div className="seg" style={{ flexWrap: 'wrap' }}>
+        {presets.map((v) => (
+          <button
+            key={v ?? 'default'}
+            className={cur === v ? 'on' : ''}
+            disabled={busy}
+            onClick={() => void set(v)}
+          >
+            {v === null ? '默认' : `${v} 秒`}
+          </button>
+        ))}
+      </div>
+      <div className="row" style={{ marginTop: 10, gap: 8 }}>
+        <input
+          className="field"
+          type="number"
+          min={10}
+          max={300}
+          placeholder="自定义秒数"
+          value={custom}
+          onChange={(e) => setCustom(e.target.value)}
+          style={{ maxWidth: 150 }}
+        />
+        <button
+          className="btn tiny"
+          disabled={busy || !custom}
+          onClick={() => {
+            const n = Number(custom)
+            if (Number.isFinite(n)) void set(n)
+          }}
+        >
+          设定
+        </button>
+      </div>
+      <p className="notice" style={{ marginTop: 10, marginBottom: 0 }}>
+        轮到每个人发言 / 表演时的倒计时上限，设置后从下一位开始生效。默认按各游戏推荐值。
+      </p>
+      {err && <div className="banner err" style={{ marginTop: 10 }}>{err}</div>}
     </div>
   )
 }
@@ -356,6 +432,10 @@ function Lobby({
 function Result({ view }: { view: RoomView }) {
   const f = view.finished
   if (!f) return null
+  const talkers = view.players
+    .map((p) => ({ name: p.name, ms: p.speakMs ?? 0 }))
+    .filter((t) => t.ms > 0)
+    .sort((a, b) => b.ms - a.ms)
   return (
     <div className="panel" style={{ borderColor: 'rgba(10,159,131,.38)' }}>
       <div className="h">结算</div>
@@ -375,6 +455,20 @@ function Result({ view }: { view: RoomView }) {
           </div>
         ))}
       </div>
+      {talkers.length > 0 && (
+        <>
+          <div className="divider" />
+          <div className="h" style={{ marginBottom: 8 }}>发言时长</div>
+          <div className="stack" style={{ gap: 7 }}>
+            {talkers.map((t) => (
+              <div className="score-line" key={t.name}>
+                <span className="dim">{t.name}</span>
+                <b className="mono">{fmtSpeak(t.ms)}</b>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
       <p className="notice" style={{ marginTop: 12 }}>
         {f.verdict}
       </p>

@@ -74,6 +74,50 @@ export function retime(room: Room, ms: number) {
   room.deadlineAt = Date.now() + ms
 }
 
+/** 每人轮次发言上限：房主设了就用他的，没设退回各游戏默认 */
+export const speakLimitMs = (room: Room, defaultMs: number) =>
+  room.speakSeconds != null ? Math.max(1, room.speakSeconds) * 1000 : defaultMs
+
+/**
+ * 当前正在发言/表演的那一位。只认「一人一轮」的阶段：
+ * 卧底描述、狼人发言、两真一假公开、我有你没有出题、你比我猜比划。
+ * 同时填写/投票的阶段没有单一发言者，返回 null。
+ */
+export function currentSpeaker(room: Room): string | null {
+  switch (room.gameId) {
+    case 'spy':
+      return room.phase === 'describe'
+        ? spy(room).order.filter((id) => byId(room, id)?.alive)[room.turn] ?? null
+        : null
+    case 'werewolf':
+      return room.phase === 'speak' ? wolf(room).order[wolf(room).cursor] ?? null : null
+    case 'twos':
+      return room.phase === 'show' ? twos(room).order[twos(room).cursor] ?? null : null
+    case 'never':
+      return room.phase === 'show' ? never(room).order[never(room).cursor] ?? null : null
+    case 'mime':
+      return room.phase === 'run' ? mime(room).actorId ?? null : null
+    default:
+      return null
+  }
+}
+
+/**
+ * 集中记账：每次 tick/提交/推进后调用。发言者没变就什么都不做（不产生写），
+ * 一旦换人，把上一位从 turnStartedAt 到现在的实际耗时累加到他的 speakMs。
+ */
+export function syncSpeakTimer(room: Room, now: number) {
+  const speaker = currentSpeaker(room)
+  const prev = room.speakingId ?? null
+  if (speaker === prev) return
+  if (prev && room.turnStartedAt != null) {
+    const p = byId(room, prev)
+    if (p) p.speakMs = (p.speakMs ?? 0) + Math.max(0, now - room.turnStartedAt)
+  }
+  room.speakingId = speaker
+  room.turnStartedAt = speaker ? now : null
+}
+
 /** 该玩家在本阶段是否已经交过 */
 export const submitted = (room: Room, id: string, key: string) => {
   const d: any = room.data

@@ -6,6 +6,9 @@ import { recommend } from '../../shared/recommend'
 import { WOLF_VARIANTS } from '../../shared/werewolf'
 import type { Intimacy, Profile, Setting, Vibe } from '../../shared/types'
 import { gamesHref, go, hostHref, saveToken } from '../route'
+import { JoinRoomCard } from '../ui/JoinRoomCard'
+import { sanitizeAvatar } from '../../shared/avatars'
+import { AvatarPicker } from '../ui/Avatar'
 
 const VIBES: { v: Vibe; label: string; hint: string }[] = [
   { v: 'laugh', label: '爆笑', hint: '笑到缺氧，拍照留念' },
@@ -67,6 +70,7 @@ export function Home() {
   const [step, setStep] = useState(0)
   const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE)
   const [hostName, setHostName] = useState('')
+  const [hostAvatar, setHostAvatar] = useState(() => sanitizeAvatar(localStorage.getItem('icebreaker.avatar')))
   const [rank, setRank] = useState(0)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -158,6 +162,7 @@ export function Home() {
       const res = await createRoom({
         gameId,
         hostName: hostName.trim() || '房主',
+        hostAvatar,
         judgeMode: meta.judgeModes[0],
         profile,
         variant,
@@ -188,6 +193,8 @@ export function Home() {
             <button className="btn big home-cta home-browse" onClick={() => go(gamesHref)}>
               🎮 自己挑 · 所有游戏
             </button>
+
+            <JoinRoomCard />
 
             <div className="home-steps">
               {[
@@ -465,6 +472,16 @@ export function Home() {
                   onChange={(e) => setHostName(e.target.value)}
                 />
                 <p className="field-note">不填就叫「房主」，之后也能改。</p>
+                <label className="blk" style={{ marginTop: 16 }}>
+                  你的头像 · 会出现在座位表和聊天里
+                </label>
+                <AvatarPicker
+                  value={hostAvatar}
+                  onChange={(id) => {
+                    setHostAvatar(id)
+                    localStorage.setItem('icebreaker.avatar', id)
+                  }}
+                />
                 <div className="summary-chips">
                   <span className="chip">{profile.count} 人</span>
                   <span className="chip">{profile.minutes} 分钟</span>

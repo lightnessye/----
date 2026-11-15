@@ -21,6 +21,7 @@ import {
   sanitize,
   seated,
   shuffle,
+  speakLimitMs,
   wolf,
 } from './util'
 
@@ -174,7 +175,7 @@ function startSpeak(room: Room) {
   d.cursor = 0
   d.speeches = {}
   const first = d.order[0]
-  phase(room, 'speak', { ms: SPEAK_MS, turn: 0 })
+  phase(room, 'speak', { ms: speakLimitMs(room, SPEAK_MS), turn: 0 })
   ev(
     room,
     'judge',
@@ -204,7 +205,7 @@ function advanceSpeak(room: Room) {
     return
   }
   d.cursor += 1
-  phase(room, 'speak', { ms: SPEAK_MS, turn: d.cursor })
+  phase(room, 'speak', { ms: speakLimitMs(room, SPEAK_MS), turn: d.cursor })
 }
 
 /** 结算夜里：守卫 → 狼刀 → 女巫 → 天亮 */

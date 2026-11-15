@@ -4,10 +4,13 @@ import { useShareBase } from '../hooks/useShareBase'
 import { uiFor } from '../games'
 import { PlayerInput } from '../ui/PlayerInput'
 import { RefereeConsole } from '../ui/RefereeConsole'
-import { JudgeBadge, Seats, Ticker } from '../ui/common'
+import { JudgeBadge, Seats, Ticker, fmtSpeak } from '../ui/common'
+import { AvatarBadge, AvatarPicker } from '../ui/Avatar'
+import { ChatPanel } from '../ui/ChatPanel'
 import { Result } from './Host'
 import { go, joinHref, shareHostHref, tokenFor } from '../route'
 import type { RoomView, WolfRole } from '../../shared/types'
+import { sanitizeAvatar } from '../../shared/avatars'
 import { ROLE_LABEL } from '../../shared/werewolf'
 
 const nameIn = (view: RoomView, id: string) => view.players.find((p) => p.id === id)?.name ?? '某人'
@@ -67,7 +70,8 @@ export function Phone({ code, token }: { code: string; token: string | null }) {
     <div className="app">
       <div className="wrap">
         <div className="phone-head">
-          <div>
+          <AvatarBadge id={view.me?.avatar} seat={view.me?.seat} size={42} />
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 800 }}>
               {view.meta.emoji} {view.meta.name}
             </div>
@@ -82,10 +86,27 @@ export function Phone({ code, token }: { code: string; token: string | null }) {
         </div>
 
         {isLobby ? (
-          <LobbyPhone view={view} />
+          <LobbyPhone view={view} run={run} />
         ) : (
           <>
             <SecretCard view={view} />
+
+            {(() => {
+              const base = view.me?.speakMs ?? 0
+              const live =
+                view.me && view.speakingId === view.me.id && view.turnStartedAt != null
+                  ? Math.max(0, now - view.turnStartedAt)
+                  : 0
+              const total = base + live
+              if (total <= 0) return null
+              return (
+                <div className="row" style={{ gap: 8, marginBottom: 12 }}>
+                  <span className={`chip ${live > 0 ? 'hot' : 'cool'}`}>
+                    {live > 0 ? '我正在发言' : '我累计发言'} {fmtSpeak(total)}
+                  </span>
+                </div>
+              )
+            })()}
 
             {view.needs.prompt && (
               <div className={`banner ${myTurn ? '' : 'info'}`}>
@@ -195,6 +216,10 @@ export function Phone({ code, token }: { code: string; token: string | null }) {
             <div className="panel">
               <div className="h">在场</div>
               <Seats view={view} turnId={turnId} compact />
+            </div>
+
+            <div style={{ marginTop: 14 }}>
+              <ChatPanel view={view} onSend={(t) => run('chat', { text: t })} height={260} />
             </div>
 
             <p className="notice center" style={{ marginTop: 16 }}>
@@ -344,7 +369,13 @@ function SecretCard({ view }: { view: RoomView }) {
   return null
 }
 
-function LobbyPhone({ view }: { view: RoomView }) {
+function LobbyPhone({
+  view,
+  run,
+}: {
+  view: RoomView
+  run: (action: string, payload?: unknown) => Promise<string | null>
+}) {
   const host = view.players.find((p) => p.isHost)
   return (
     <>
@@ -354,6 +385,7 @@ function LobbyPhone({ view }: { view: RoomView }) {
           你现在是 {view.me?.seat} 号 · {view.me?.name}。房主是 {host?.name}。
         </p>
       </div>
+      <MyAvatarCard view={view} run={run} />
       <div className="panel">
         <div className="h">这局怎么开始</div>
         <p className="sub">{view.meta.desc}</p>
@@ -373,6 +405,7 @@ function LobbyPhone({ view }: { view: RoomView }) {
         <div className="h">已经进来的人</div>
         <Seats view={view} />
       </div>
+      <ChatPanel view={view} onSend={(t) => run('chat', { text: t })} height={240} />
       <p className="notice">
         这个页面会自动刷新，不用手动重进。房间号 {view.code}，关掉页面可以从{' '}
         <a href={joinHref(view.code)}>加入页</a> 再进来（名字会重新排一次号）。
@@ -383,5 +416,37 @@ function LobbyPhone({ view }: { view: RoomView }) {
         </div>
       )}
     </>
+  )
+}
+
+/** 大厅里随时换头像；开局后也能换，聊天和座位表立刻跟着变 */
+function MyAvatarCard({
+  view,
+  run,
+}: {
+  view: RoomView
+  run: (action: string, payload?: unknown) => Promise<string | null>
+}) {
+  const [open, setOpen] = useState(false)
+  if (!view.me) return null
+  const current = sanitizeAvatar(view.me.avatar, view.me.seat)
+  return (
+    <div className="card tight">
+      <div className="me-card">
+        <AvatarBadge id={current} size={52} />
+        <div className="who">
+          <b>{view.me.name}</b>
+          <span>{view.me.seat} 号 · 聊天和座位表都认这个头像</span>
+        </div>
+        <button type="button" className="btn tiny" onClick={() => setOpen((o) => !o)}>
+          {open ? '收起' : '换头像'}
+        </button>
+      </div>
+      {open && (
+        <div style={{ marginTop: 12 }}>
+          <AvatarPicker value={current} onChange={(id) => void run('avatar', { avatar: id })} />
+        </div>
+      )}
+    </div>
   )
 }

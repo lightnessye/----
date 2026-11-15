@@ -2,12 +2,20 @@ import { useState } from 'react'
 import { joinRoom } from '../api'
 import { go, saveToken } from '../route'
 import { ROOM_CODE_LENGTH } from '../../shared/types'
+import { sanitizeAvatar } from '../../shared/avatars'
+import { AvatarBadge, AvatarPicker } from '../ui/Avatar'
 
 export function Join({ initialCode }: { initialCode: string }) {
   const [code, setCode] = useState(initialCode.slice(0, ROOM_CODE_LENGTH))
   const [name, setName] = useState(() => localStorage.getItem('icebreaker.name') ?? '')
+  const [avatar, setAvatar] = useState(() => sanitizeAvatar(localStorage.getItem('icebreaker.avatar')))
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+
+  const pickAvatar = (id: string) => {
+    setAvatar(id)
+    localStorage.setItem('icebreaker.avatar', id)
+  }
 
   const submit = async () => {
     if (code.length !== ROOM_CODE_LENGTH)
@@ -16,7 +24,7 @@ export function Join({ initialCode }: { initialCode: string }) {
     setBusy(true)
     setErr(null)
     try {
-      const res = await joinRoom(code.toUpperCase(), name.trim())
+      const res = await joinRoom(code.toUpperCase(), name.trim(), avatar)
       localStorage.setItem('icebreaker.name', name.trim())
       saveToken(res.code, res.token)
       go(`/p.html?c=${res.code}`)
@@ -66,6 +74,17 @@ export function Join({ initialCode }: { initialCode: string }) {
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && void submit()}
             />
+            <label className="blk" style={{ marginTop: 16 }}>
+              选个头像 · 进场后大家都认它
+            </label>
+            <AvatarPicker value={avatar} onChange={pickAvatar} />
+            <div className="avatar-preview">
+              <AvatarBadge id={avatar} size={46} />
+              <div className="who">
+                <b>{name.trim() || '你的名字'}</b>
+                <span>别人在座位表和聊天里看到的就是这个样子</span>
+              </div>
+            </div>
             {err && <div className="banner err" style={{ marginTop: 14 }}>{err}</div>}
             <button
               className="btn primary big"

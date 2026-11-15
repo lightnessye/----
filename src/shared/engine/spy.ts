@@ -16,6 +16,7 @@ import {
   sanitize,
   seated,
   shuffle,
+  speakLimitMs,
   spy,
 } from './util'
 
@@ -67,7 +68,7 @@ function startDescribe(room: Room) {
   d.runoff = []
   d.round = room.round
   const first = byId(room, d.order[0])
-  phase(room, 'describe', { ms: DESC_MS, turn: 0 })
+  phase(room, 'describe', { ms: speakLimitMs(room, DESC_MS), turn: 0 })
   ev(room, 'judge', judge('round', { round: room.round }) + `先从 ${first?.name ?? '1 号'} 开始。`)
 }
 
@@ -222,6 +223,7 @@ export const spyEngine: GameEngine = {
         phase(room, 'vote', { ms: VOTE_MS })
       } else {
         room.turn = nextTurn
+        phase(room, 'describe', { ms: speakLimitMs(room, DESC_MS), turn: nextTurn })
         const nx = byId(room, d.order[nextTurn])
         ev(room, 'info', `轮到 ${nx?.name ?? '?'}。`)
       }
@@ -272,6 +274,7 @@ export const spyEngine: GameEngine = {
           ev(room, 'judge', judge('hurry', { name: stuck.name }))
         }
         room.turn += 1
+        phase(room, 'describe', { ms: speakLimitMs(room, DESC_MS), turn: room.turn })
         return
       }
       ev(room, 'judge', '描述环节结束，投票。')
@@ -310,7 +313,7 @@ export const spyEngine: GameEngine = {
         phase(room, 'vote', { ms: VOTE_MS })
       } else {
         room.turn += 1
-        phase(room, 'describe', { ms: DESC_MS, turn: room.turn })
+        phase(room, 'describe', { ms: speakLimitMs(room, DESC_MS), turn: room.turn })
       }
       return
     }

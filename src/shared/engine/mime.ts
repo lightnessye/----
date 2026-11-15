@@ -15,6 +15,7 @@ import {
   seated,
   secondsLeft,
   shuffle,
+  speakLimitMs,
 } from './util'
 
 const ROUND_MS = 60_000
@@ -77,6 +78,7 @@ function wordCount(d: MimeData, ok: boolean) {
 }
 
 function beginRun(room: Room, d: MimeData) {
+  d.timeMs = speakLimitMs(room, ROUND_MS)
   d.list = shuffle(MIME_WORDS[d.difficulty] ?? []).slice(0, WORDS_PER_ROUND)
   d.index = 0
   d.actorId = actorForRound(room, d)

@@ -80,6 +80,20 @@ export interface Player {
   score: number
   alive: boolean
   outReason: string | null
+  /** 自选头像 id（src/shared/avatars.ts）；老房间可能没有，按座位号兜底 */
+  avatar?: string
+  /** 累计发言/表演时长（ms），轮到本人发言时由服务端累加；老房间没有，按 0 兜底 */
+  speakMs?: number
+}
+
+/** 房间聊天：和裁判播报分开的一条流，所有端都能看到 */
+export interface ChatMessage {
+  id: number
+  by: string
+  name: string
+  avatar: string
+  text: string
+  at: number
 }
 
 export interface RoomEvent {
@@ -108,9 +122,17 @@ export interface Room {
   deadlineAt: number | null
   pausedMs: number
 
+  /** 房主设定的每人轮次发言上限（秒）；null/缺省表示用各游戏默认值 */
+  speakSeconds?: number | null
+  /** 当前正在发言/表演的玩家 id；不在发言阶段为 null */
+  speakingId?: string | null
+  /** 当前这一位发言开始的时刻，用于累计本人时长 */
+  turnStartedAt?: number | null
+
   players: Player[]
   data: GameData
   events: RoomEvent[]
+  chat?: ChatMessage[]
   finished: FinalResult | null
 }
 
@@ -370,12 +392,18 @@ export interface RoomView {
   turn: number
   deadlineAt: number | null
   serverNow: number
+  /** 房主设定的每人轮次发言上限（秒），null 表示用默认 */
+  speakSeconds: number | null
+  /** 当前发言者 id 与其开始时刻，前端据此实时显示本人已发言时长 */
+  speakingId: string | null
+  turnStartedAt: number | null
   judgeMode: JudgeMode
   refereeId: string | null
   role: Role
   me: Player | null
   players: Player[]
   events: RoomEvent[]
+  chat: ChatMessage[]
   finished: FinalResult | null
   /** 服务端已脱敏的公开数据，字段结构由各游戏自己决定 */
   publicData: Record<string, any>

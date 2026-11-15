@@ -63,6 +63,7 @@ export async function createRoomRoute(b: any): Promise<ApiResponse> {
   const input: CreateInput = {
     gameId: String(b.gameId),
     hostName: sanitizeName(b.hostName ?? ''),
+    hostAvatar: typeof b.hostAvatar === 'string' ? b.hostAvatar.slice(0, 24) : undefined,
     judgeMode: b.judgeMode === 'human' ? 'human' : 'ai',
     profile: clampProfile(b.profile),
     variant: typeof b.variant === 'string' ? b.variant.slice(0, 24) : undefined,
@@ -79,7 +80,8 @@ export async function createRoomRoute(b: any): Promise<ApiResponse> {
 
 export async function joinRoute(b: any): Promise<ApiResponse> {
   const code = normalize(b?.code)
-  const result = await joinRoom(code, String(b?.name ?? ''))
+  const avatar = typeof b?.avatar === 'string' ? b.avatar.slice(0, 24) : undefined
+  const result = await joinRoom(code, String(b?.name ?? ''), avatar)
   if (result) return ok({ code: result.room.code, token: result.player.id, view: buildView(result.room, result.player.id) })
 
   const loaded = await loadRoom(code)

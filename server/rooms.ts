@@ -1,7 +1,9 @@
-import type { GameData, Profile, Room, RoomView, Player } from '../src/shared/types'
+import type { ChatMessage, GameData, Profile, Room, RoomView, Player } from '../src/shared/types'
 import { ROOM_CODE_LENGTH } from '../src/shared/types'
+import { sanitizeAvatar } from '../src/shared/avatars'
 import { GAME_BY_ID } from '../src/shared/games'
 import { engineFor } from '../src/shared/engine'
+import { syncSpeakTimer } from '../src/shared/engine/util'
 import { memoryStore, ROOM_TTL_MS, type Loaded, type RoomStore } from './store'
 
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -10,12 +12,18 @@ const PLAYER_OFFLINE_MS = 45_000
 /** 在线状态写库的最小间隔，避免每次轮询都产生一次写 */
 const PRESENCE_WRITE_MS = 10_000
 const CAS_ATTEMPTS = 4
+const CHAT_MAX_LEN = 200
+const CHAT_KEEP = 120
+const CHAT_VIEW = 60
+/** 同一人两条消息的最小间隔，防刷屏 */
+const CHAT_COOLDOWN_MS = 700
 
 export interface CreateInput {
   profile: Profile
   gameId: string
   judgeMode: 'ai' | 'human'
   hostName: string
+  hostAvatar?: string
   /** 有变体的游戏（狼人杀）在这里带上玩家选的那一版 */
   variant?: string
 }
@@ -102,6 +110,7 @@ export function advance(room: Room, now: number) {
       }
     }
   }
+  syncSpeakTimer(room, now)
 }
 
 export async function createRoom(input: CreateInput): Promise<{ room: Room; host: Player }> {
@@ -122,6 +131,8 @@ export async function createRoom(input: CreateInput): Promise<{ room: Room; host
     score: 0,
     alive: true,
     outReason: null,
+    avatar: sanitizeAvatar(input.hostAvatar, 1),
+    speakMs: 0,
   }
 
   const room: Room = {
@@ -140,9 +151,13 @@ export async function createRoom(input: CreateInput): Promise<{ room: Room; host
     startedAt: null,
     deadlineAt: null,
     pausedMs: 0,
+    speakSeconds: null,
+    speakingId: null,
+    turnStartedAt: null,
     players: [host],
     data: {} as GameData,
     events: [],
+    chat: [],
     finished: null,
   }
 
@@ -157,6 +172,7 @@ export const loadRoom = (code: string): Promise<Loaded | null> => store.load(nor
 export async function joinRoom(
   code: string,
   name: string,
+  avatar?: string,
 ): Promise<{ room: Room; player: Player } | null> {
   const clean = sanitizeName(name)
   if (!clean) return null
@@ -178,6 +194,8 @@ export async function joinRoom(
       score: 0,
       alive: true,
       outReason: null,
+      avatar: sanitizeAvatar(avatar, room.players.length + 1),
+      speakMs: 0,
     }
     room.players.push(player)
     room.seq += 1
@@ -201,12 +219,21 @@ export function touch(room: Room) {
 /** 房主在 lobby 里设定裁判模式、真人裁判，以及有变体的游戏的模式 */
 export function configureRoom(
   room: Room,
-  opts: { judgeMode?: 'ai' | 'human'; refereeId?: string | null; variant?: string },
+  opts: { judgeMode?: 'ai' | 'human'; refereeId?: string | null; variant?: string; speakSeconds?: number | null },
 ): string | null {
   const meta = GAME_BY_ID[room.gameId]
   if (opts.variant !== undefined) {
     if (room.phase !== 'lobby') return '开局之后不能换模式了'
     room.variant = String(opts.variant || '')
+  }
+  if (opts.speakSeconds !== undefined) {
+    if (opts.speakSeconds === null) {
+      room.speakSeconds = null
+    } else {
+      const n = Math.round(Number(opts.speakSeconds))
+      if (!Number.isFinite(n)) return '发言时长得是个数字'
+      room.speakSeconds = Math.max(10, Math.min(300, n))
+    }
   }
   if (opts.judgeMode) {
     if (!meta.judgeModes.includes(opts.judgeMode)) return `${meta.name} 不支持这种裁判方式`
@@ -244,6 +271,32 @@ export function startRoom(room: Room, hostToken: string): string | null {
   return null
 }
 
+/** 聊天和换头像是所有游戏通用的房间操作，不进各游戏引擎 */
+function sendChat(room: Room, actor: Player, payload: any): string | null {
+  const text = String(payload?.text ?? '').replace(/\s+/g, ' ').trim().slice(0, CHAT_MAX_LEN)
+  if (!text) return '说点什么再发'
+  const chat = room.chat ?? (room.chat = [])
+  const now = Date.now()
+  for (let i = chat.length - 1; i >= 0; i--) {
+    if (chat[i].by === actor.id) {
+      if (now - chat[i].at < CHAT_COOLDOWN_MS) return '手速太快啦，缓一秒再发'
+      break
+    }
+  }
+  room.seq += 1
+  chat.push({
+    id: room.seq,
+    by: actor.id,
+    name: actor.name,
+    avatar: sanitizeAvatar(actor.avatar, actor.seat),
+    text,
+    at: now,
+  })
+  if (chat.length > CHAT_KEEP) chat.splice(0, chat.length - CHAT_KEEP)
+  touch(room)
+  return null
+}
+
 export function act(
   room: Room,
   token: string,
@@ -254,8 +307,15 @@ export function act(
   const actor = room.players.find((p) => p.id === token)
   if (!engine || !actor) return '身份失效，请重新加入房间'
   if (!/^[a-zA-Z][a-zA-Z0-9]{1,24}$/.test(action)) return '未知操作'
+  if (action === 'chat') return sendChat(room, actor, payload)
+  if (action === 'avatar') {
+    actor.avatar = sanitizeAvatar(payload?.avatar, actor.seat)
+    touch(room)
+    return null
+  }
   engine.act(room, actor, action, payload ?? {})
   touch(room)
+  syncSpeakTimer(room, Date.now())
   return null
 }
 
@@ -264,9 +324,14 @@ export function nextStep(room: Room, token: string | null): string | null {
   if (!engine) return '游戏引擎缺失'
   const actor = token ? room.players.find((p) => p.id === token) ?? null : null
   if (token && !actor) return '身份失效，请重新加入房间'
-  if (room.phase === 'lobby') return startRoom(room, actor?.id ?? '')
+  if (room.phase === 'lobby') {
+    const err = startRoom(room, actor?.id ?? '')
+    syncSpeakTimer(room, Date.now())
+    return err
+  }
   engine.next(room, actor)
   touch(room)
+  syncSpeakTimer(room, Date.now())
   return null
 }
 
@@ -308,12 +373,16 @@ export function buildView(room: Room, token: string | null, asWatcher = false): 
     turn: room.turn,
     deadlineAt: room.deadlineAt,
     serverNow: now,
+    speakSeconds: room.speakSeconds ?? null,
+    speakingId: room.speakingId ?? null,
+    turnStartedAt: room.turnStartedAt ?? null,
     judgeMode: room.judgeMode,
     refereeId: room.refereeId,
     role,
     me: me ? players.find((p) => p.id === me.id) ?? null : null,
     players,
     events: room.events.slice(-14),
+    chat: (room.chat ?? []).slice(-CHAT_VIEW),
     finished: room.finished,
     publicData: engine.publicData(room),
     secret: me && !asWatcher ? engine.secretFor(room, me) : {},

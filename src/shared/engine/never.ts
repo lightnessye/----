@@ -14,6 +14,7 @@ import {
   sanitize,
   seated,
   shuffle,
+  speakLimitMs,
 } from './util'
 
 const WRITE_MS = 60_000
@@ -80,7 +81,7 @@ function enterRaise(room: Room, from: number, prelude: string) {
   }
   room.round = d.cursor + 1
   if (!d.didIt[id]) d.didIt[id] = []
-  phase(room, 'show', { ms: RAISE_MS })
+  phase(room, 'show', { ms: speakLimitMs(room, RAISE_MS) })
   if (prelude) ev(room, 'info', prelude)
   ev(room, 'info', `${nameOf(room, id)}：「${d.claims[id]}」—— 真做过的人在手机上点「我做过」，没做过的不用动。`)
 }

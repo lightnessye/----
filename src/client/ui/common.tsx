@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import QRCode from 'qrcode'
 import type { Player, RoomEvent, RoomView } from '../../shared/types'
+import { AvatarBadge } from './Avatar'
 
 export function QrImage({ text, size = 150 }: { text: string; size?: number }) {
   const [src, setSrc] = useState<string | null>(null)
@@ -74,7 +75,7 @@ export function Seats({
             key={p.id}
             className={`seat ${p.alive ? '' : 'out'} ${view.me?.id === p.id ? 'me' : ''} ${isTurn ? 'turn' : ''}`}
           >
-            <span className="av">{p.name.slice(0, 1)}</span>
+            <AvatarBadge id={p.avatar} seat={p.seat} size={30} />
             <span style={{ minWidth: 0 }}>
               <div className="nm">{p.name}</div>
               {!compact && (
@@ -115,7 +116,8 @@ export function Scoreboard({ players, judge }: { players: Player[]; judge?: bool
     <div className="stack" style={{ gap: 7 }}>
       {sorted.map((p, i) => (
         <div className="score-line" key={p.id}>
-          <span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+            <AvatarBadge id={p.avatar} seat={p.seat} size={22} />
             <b style={{ color: i === 0 && top > 0 ? 'var(--accent-2)' : undefined }}>{p.name}</b>
             {!p.alive && <span className="dim"> · 已出局</span>}
             {judge && p.isHost && <span className="dim"> · 房主</span>}
@@ -123,6 +125,46 @@ export function Scoreboard({ players, judge }: { players: Player[]; judge?: bool
           <b className="mono">{p.score}</b>
         </div>
       ))}
+    </div>
+  )
+}
+
+/** 把毫秒时长说成人话：不足一分钟用「秒」，超过用 m:ss */
+export function fmtSpeak(ms: number): string {
+  const s = Math.max(0, Math.round((ms || 0) / 1000))
+  if (s < 60) return `${s} 秒`
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+}
+
+/** 每个人的累计发言时长榜；当前发言者带实时计时。没人发言过时整块隐藏。 */
+export function SpeakBoard({ view, now }: { view: RoomView; now: number }) {
+  const rows = view.players
+    .map((p) => {
+      const base = p.speakMs ?? 0
+      const live =
+        view.speakingId === p.id && view.turnStartedAt != null
+          ? Math.max(0, now - view.turnStartedAt)
+          : 0
+      return { p, total: base + live, live: live > 0 }
+    })
+    .filter((r) => r.total > 0 || r.live)
+    .sort((a, b) => b.total - a.total || a.p.seat - b.p.seat)
+  if (!rows.length) return null
+  return (
+    <div className="panel">
+      <div className="h">发言时长</div>
+      <div className="stack" style={{ gap: 7 }}>
+        {rows.map(({ p, total, live }) => (
+          <div className="score-line" key={p.id}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+              <AvatarBadge id={p.avatar} seat={p.seat} size={22} />
+              <b>{p.name}</b>
+              {live && <span className="chip hot">发言中</span>}
+            </span>
+            <b className="mono">{fmtSpeak(total)}</b>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

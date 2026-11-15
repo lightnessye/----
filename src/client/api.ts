@@ -28,6 +28,7 @@ export interface CreatedRoom {
 export function createRoom(input: {
   gameId: string
   hostName: string
+  hostAvatar?: string
   judgeMode: 'ai' | 'human'
   profile: Profile
   variant?: string
@@ -35,8 +36,8 @@ export function createRoom(input: {
   return req<CreatedRoom>('/api/rooms', { method: 'POST', body: JSON.stringify(input) })
 }
 
-export function joinRoom(code: string, name: string) {
-  return req<CreatedRoom>('/api/join', { method: 'POST', body: JSON.stringify({ code, name }) })
+export function joinRoom(code: string, name: string, avatar?: string) {
+  return req<CreatedRoom>('/api/join', { method: 'POST', body: JSON.stringify({ code, name, avatar }) })
 }
 
 export function fetchView(code: string, token: string | null, watch = false) {
@@ -63,7 +64,7 @@ export function sendNext(code: string, token: string) {
 export function configure(
   code: string,
   token: string,
-  opts: { judgeMode?: 'ai' | 'human'; refereeId?: string | null; variant?: string },
+  opts: { judgeMode?: 'ai' | 'human'; refereeId?: string | null; variant?: string; speakSeconds?: number | null },
 ) {
   return req<{ error: string | null; view: RoomView }>(`/api/rooms/${encodeURIComponent(code)}/configure`, {
     method: 'POST',
