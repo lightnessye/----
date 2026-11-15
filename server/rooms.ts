@@ -2,8 +2,9 @@ import type { ChatMessage, GameData, Profile, Room, RoomView, Player } from '../
 import { ROOM_CODE_LENGTH } from '../src/shared/types'
 import { sanitizeAvatar } from '../src/shared/avatars'
 import { GAME_BY_ID } from '../src/shared/games'
+import { isQuickPhrase } from '../src/shared/phrases'
 import { engineFor } from '../src/shared/engine'
-import { syncSpeakTimer } from '../src/shared/engine/util'
+import { syncSpeakTimer, seated, ev } from '../src/shared/engine/util'
 import { memoryStore, ROOM_TTL_MS, type Loaded, type RoomStore } from './store'
 
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -11,6 +12,8 @@ const TOKEN_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789'
 const PLAYER_OFFLINE_MS = 45_000
 /** 在线状态写库的最小间隔，避免每次轮询都产生一次写 */
 const PRESENCE_WRITE_MS = 10_000
+/** 喊话节流：事件列表只留 60 条，刷屏会把裁判播报挤掉 */
+const SAY_COOLDOWN_MS = 2_000
 const CAS_ATTEMPTS = 4
 const CHAT_MAX_LEN = 200
 const CHAT_KEEP = 120
@@ -128,6 +131,7 @@ export async function createRoom(input: CreateInput): Promise<{ room: Room; host
     isHost: true,
     connected: true,
     lastSeen: now,
+    lastChatAt: 0,
     score: 0,
     alive: true,
     outReason: null,
@@ -145,6 +149,7 @@ export async function createRoom(input: CreateInput): Promise<{ room: Room; host
     profile: input.profile,
     judgeMode: meta.judgeModes.includes(input.judgeMode) ? input.judgeMode : meta.judgeModes[0],
     refereeId: null,
+    hostPlays: true,
     phase: 'lobby',
     round: 0,
     turn: 0,
@@ -178,6 +183,8 @@ export async function joinRoom(
   if (!clean) return null
   const result = await mutateRoom(normalize(code), (room) => {
     if (room.phase !== 'lobby') return null
+    const meta = GAME_BY_ID[room.gameId]
+    if (meta && room.players.length >= meta.maxPlayers) return null
 
     const taken = new Set(room.players.map((p) => p.name))
     let finalName = clean
@@ -191,6 +198,7 @@ export async function joinRoom(
       isHost: false,
       connected: true,
       lastSeen: Date.now(),
+      lastChatAt: 0,
       score: 0,
       alive: true,
       outReason: null,
@@ -219,7 +227,7 @@ export function touch(room: Room) {
 /** 房主在 lobby 里设定裁判模式、真人裁判，以及有变体的游戏的模式 */
 export function configureRoom(
   room: Room,
-  opts: { judgeMode?: 'ai' | 'human'; refereeId?: string | null; variant?: string; speakSeconds?: number | null },
+  opts: { judgeMode?: 'ai' | 'human'; refereeId?: string | null; variant?: string; speakSeconds?: number | null; game?: Record<string, unknown> },
 ): string | null {
   const meta = GAME_BY_ID[room.gameId]
   if (opts.variant !== undefined) {
@@ -250,6 +258,12 @@ export function configureRoom(
       room.refereeId = p.id
     }
   }
+  if (opts.game) {
+    const engine = engineFor(room.gameId)
+    if (!engine?.configure) return '这个游戏没有可调的配置'
+    const err = engine.configure(room, opts.game)
+    if (err) return err
+  }
   if (room.judgeMode === 'human' && !room.refereeId && room.phase === 'lobby') {
     return '还差一步：指定一名真人裁判'
   }
@@ -260,7 +274,7 @@ export function configureRoom(
 export function startRoom(room: Room, hostToken: string): string | null {
   if (!room.players.some((p) => p.id === hostToken && p.isHost)) return '只有房主能开始这局'
   const meta = GAME_BY_ID[room.gameId]
-  if (room.players.length < meta.minPlayers) return `至少 ${meta.minPlayers} 个人才能开这局`
+  if (seated(room).length < meta.minPlayers) return `至少 ${meta.minPlayers} 个人才能开这局`
   if (room.judgeMode === 'human' && !room.refereeId) return '请先指定一名真人裁判'
   const engine = engineFor(room.gameId)
   if (!engine) return '游戏引擎缺失'
@@ -297,6 +311,17 @@ function sendChat(room: Room, actor: Player, payload: any): string | null {
   return null
 }
 
+/** 喊话是所有游戏共用的一层，不进各引擎 */
+function say(room: Room, actor: Player, payload: any): string | null {
+  if (!isQuickPhrase(payload?.text)) return '只能发列表里的话'
+  const now = Date.now()
+  if (now - actor.lastChatAt < SAY_COOLDOWN_MS) return null
+  actor.lastChatAt = now
+  ev(room, 'chat', `${actor.name}：${payload.text}`)
+  touch(room)
+  return null
+}
+
 export function act(
   room: Room,
   token: string,
@@ -313,6 +338,7 @@ export function act(
     touch(room)
     return null
   }
+  if (action === 'say') return say(room, actor, payload)
   engine.act(room, actor, action, payload ?? {})
   touch(room)
   syncSpeakTimer(room, Date.now())
@@ -363,6 +389,11 @@ export function buildView(room: Room, token: string | null, asWatcher = false): 
     connected: now - p.lastSeen < PLAYER_OFFLINE_MS,
   }))
 
+  // 房主只主持（或房主就是真人裁判）时按观众下发：不给玩家输入、不发私密词
+  const spectatingHost =
+    !!me?.isHost &&
+    (room.hostPlays === false || (room.judgeMode === 'human' && room.refereeId === me.id))
+
   const view: RoomView = {
     code: room.code,
     seq: room.seq,
@@ -378,6 +409,7 @@ export function buildView(room: Room, token: string | null, asWatcher = false): 
     turnStartedAt: room.turnStartedAt ?? null,
     judgeMode: room.judgeMode,
     refereeId: room.refereeId,
+    hostPlays: room.hostPlays,
     role,
     me: me ? players.find((p) => p.id === me.id) ?? null : null,
     players,
@@ -385,12 +417,12 @@ export function buildView(room: Room, token: string | null, asWatcher = false): 
     chat: (room.chat ?? []).slice(-CHAT_VIEW),
     finished: room.finished,
     publicData: engine.publicData(room),
-    secret: me && !asWatcher ? engine.secretFor(room, me) : {},
+    secret: me && !asWatcher && !spectatingHost ? engine.secretFor(room, me) : {},
     referee: isRefereeViewer(room, me) ? engine.refereeExtra(room) : null,
     needs: { prompt: null, input: 'none', inputHint: '', submitted: false, hostHint: '' },
   }
 
-  view.needs = engine.needs(room, role === 'watcher' ? null : me, view)
+  view.needs = engine.needs(room, role === 'watcher' || spectatingHost ? null : me, view)
   return view
 }
 

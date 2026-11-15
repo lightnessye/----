@@ -64,7 +64,7 @@ export function sendNext(code: string, token: string) {
 export function configure(
   code: string,
   token: string,
-  opts: { judgeMode?: 'ai' | 'human'; refereeId?: string | null; variant?: string; speakSeconds?: number | null },
+  opts: { judgeMode?: 'ai' | 'human'; refereeId?: string | null; variant?: string; speakSeconds?: number | null; game?: Record<string, unknown> },
 ) {
   return req<{ error: string | null; view: RoomView }>(`/api/rooms/${encodeURIComponent(code)}/configure`, {
     method: 'POST',

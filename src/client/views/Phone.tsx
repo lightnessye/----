@@ -3,6 +3,7 @@ import { useRoom } from '../hooks/useRoom'
 import { useShareBase } from '../hooks/useShareBase'
 import { uiFor } from '../games'
 import { PlayerInput } from '../ui/PlayerInput'
+import { QuickPhrases } from '../ui/QuickPhrases'
 import { RefereeConsole } from '../ui/RefereeConsole'
 import { JudgeBadge, Seats, Ticker, fmtSpeak } from '../ui/common'
 import { AvatarBadge, AvatarPicker } from '../ui/Avatar'
@@ -208,6 +209,10 @@ export function Phone({ code, token }: { code: string; token: string | null }) {
               </div>
             )}
 
+            <div style={{ marginTop: 18 }}>
+              <QuickPhrases onSay={(t) => run('say', { text: t })} />
+            </div>
+
             <div className="panel" style={{ marginTop: 18 }}>
               <div className="h">最新播报</div>
               <Ticker events={view.events} limit={5} />
@@ -399,6 +404,11 @@ function LobbyPhone({
           <span className="chip">
             {view.meta.minPlayers}–{view.meta.maxPlayers} 人
           </span>
+          {view.gameId === 'spy' && (
+            <span className="chip cool">
+              {(view.publicData?.spy as any)?.describeMode === 'typed' ? '⌨️ 打字描述' : '🗣 口头描述'}
+            </span>
+          )}
         </div>
       </div>
       <div className="panel">
@@ -406,6 +416,9 @@ function LobbyPhone({
         <Seats view={view} />
       </div>
       <ChatPanel view={view} onSend={(t) => run('chat', { text: t })} height={240} />
+      <div style={{ marginTop: 14 }}>
+        <QuickPhrases onSay={(t) => run('say', { text: t })} />
+      </div>
       <p className="notice">
         这个页面会自动刷新，不用手动重进。房间号 {view.code}，关掉页面可以从{' '}
         <a href={joinHref(view.code)}>加入页</a> 再进来（名字会重新排一次号）。

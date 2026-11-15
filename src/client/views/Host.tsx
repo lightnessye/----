@@ -5,14 +5,15 @@ import { useShareBase } from '../hooks/useShareBase'
 import { uiFor } from '../games'
 import { JudgeBadge, QrImage, Seats, Scoreboard, SpeakBoard, Ticker, Timer, fmtSpeak } from '../ui/common'
 import { ChatPanel } from '../ui/ChatPanel'
+import { GameSettings } from '../ui/GameSettings'
 import { StageView } from '../ui/StageView'
 import { RefereeConsole } from '../ui/RefereeConsole'
 import { joinHref, phoneHref, shareJoinHref } from '../route'
 import { WOLF_VARIANTS } from '../../shared/werewolf'
-import type { RoomView } from '../../shared/types'
+import type { Player, RoomView } from '../../shared/types'
 
 export function Host({ code, token, watch }: { code: string; token: string | null; watch?: boolean }) {
-  const { view, error, secondsLeft, now, run, step, offline } = useRoom(code, token, watch)
+  const { view, error, secondsLeft, now, run, step, offline, refresh } = useRoom(code, token, watch)
 
   if (error && !view) {
     return (
@@ -60,7 +61,7 @@ export function Host({ code, token, watch }: { code: string; token: string | nul
         </div>
 
         {isLobby ? (
-          <Lobby view={view} token={token} step={step} run={run} now={now} />
+          <Lobby view={view} token={token} step={step} run={run} now={now} refresh={refresh} />
         ) : (
           <div className="stage-body">
             <div className="stage-main">
@@ -85,7 +86,9 @@ export function Host({ code, token, watch }: { code: string; token: string | nul
                   <a className="btn ghost tiny" href={joinHref(view.code)}>
                     手机加入页
                   </a>
-                  {view.me && (
+                  {view.me &&
+                    view.hostPlays &&
+                    !(view.judgeMode === 'human' && view.refereeId === view.me.id) && (
                     <a
                       className="btn ghost tiny"
                       href={phoneHref(view.code)}
@@ -149,18 +152,25 @@ function Lobby({
   step,
   run,
   now,
+  refresh,
 }: {
   view: RoomView
   token: string | null
   step: () => Promise<string | null>
   run: (a: string, p?: unknown) => Promise<string | null>
   now: number
+  refresh: () => void
 }) {
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const base = useShareBase()
   const href = shareJoinHref(view.code, base)
-  const canStart = view.players.length >= view.meta.minPlayers
+  const host = view.players.find((p) => p.isHost)
+  const hostIsReferee = view.judgeMode === 'human' && !!host && view.refereeId === host.id
+  const sitsOut = (p: Player) =>
+    p.isHost && (!view.hostPlays || (view.judgeMode === 'human' && view.refereeId === p.id))
+  const participants = view.players.filter((p) => !sitsOut(p)).length
+  const canStart = participants >= view.meta.minPlayers
   const needReferee = view.judgeMode === 'human' && !view.refereeId
   const aiOnly = view.meta.judgeModes.length === 1 && view.meta.judgeModes[0] === 'ai'
 
@@ -319,6 +329,8 @@ function Lobby({
         {err && <div className="banner err">{err}</div>}
         {needReferee && <div className="banner info">真人裁判模式还差一步：上面选一个裁判。</div>}
 
+        <GameSettings view={view} token={token} refresh={refresh} />
+
         <div className="stagebar">
           <button
             className="btn primary big"
@@ -331,12 +343,12 @@ function Lobby({
               setBusy(false)
             }}
           >
-            {canStart ? `开始这局（${view.players.length} 人）` : `还差 ${view.meta.minPlayers - view.players.length} 个人`}
+            {canStart ? `开始这局（${participants} 人）` : `还差 ${view.meta.minPlayers - participants} 个人`}
           </button>
           <span className="dim">
-            最少 {view.meta.minPlayers} 人。现在 {view.players.length} 人 · {Math.round((now / 1000) % 60)}
+            最少 {view.meta.minPlayers} 人。现在 {participants} 人 · {Math.round((now / 1000) % 60)}
           </span>
-          {view.me && (
+          {view.me && view.hostPlays && !hostIsReferee && (
             <a
               className="btn ghost tiny"
               href={phoneHref(view.code)}
@@ -355,7 +367,7 @@ function Lobby({
         <div className="panel">
           <div className="h">已经进来的人</div>
           <Seats view={view} />
-          {view.players.length < view.meta.minPlayers && (
+          {participants < view.meta.minPlayers && (
             <p className="notice" style={{ marginTop: 12 }}>
               把上面那个链接发到聚会群里，人齐了就自动能开始。
             </p>
