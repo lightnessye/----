@@ -137,8 +137,12 @@ export interface SpyData {
   insider: string
   insiderCount: number
   round: number
+  /** 最多几轮（第 maxRound 轮结束还没分出胜负就算卧底赢） */
+  maxRound: number
   /** 本轮描述顺序（playerId） */
   order: string[]
+  /** 平票后进入加时投票的候选人（playerId）；空数组表示这是普通一轮 */
+  runoff: string[]
   /** playerId -> 分到的词 */
   words: Record<string, string>
   descriptions: Record<string, string>

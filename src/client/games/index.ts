@@ -64,7 +64,7 @@ const spyUI: GameUI = {
       const t = spyUI.turnId!(view)
       const said = ids.filter((id) => d.descriptions?.[id]).length
       return {
-        eyebrow: `第 ${view.round} 轮 · 描述`,
+        eyebrow: `第 ${view.round} / ${d.maxRound ?? 6} 轮 · 描述`,
         focus: nameOf(view, t),
         focusHint: '用一句话说说自己手里那个词，但不能直接说出来',
         tone: 'cool',
@@ -77,13 +77,20 @@ const spyUI: GameUI = {
     }
     if (view.phase === 'vote') {
       const voted = ids.filter((id) => d.votes?.[id]).length
+      const runoff: string[] = d.runoff ?? []
+      const pool = runoff.length ? runoff : null
       return {
-        eyebrow: `第 ${view.round} 轮 · 投票`,
-        focus: '投出那个不像同类的人',
-        focusHint: '每个人一票，不能投自己，投完自动公布',
+        eyebrow: `第 ${view.round} / ${d.maxRound ?? 6} 轮 · ${pool ? '加时投票' : '投票'}`,
+        focus: pool ? '加时：只在这几个人里选' : '投出那个不像同类的人',
+        focusHint: pool
+          ? `${pool.map((id: string) => nameOf(view, id)).join('、')} —— 再平就由裁判抽签`
+          : '每个人一票，不能投自己；平票会进加时',
         tone: 'hot',
         chips: [progress(voted, ids.length)],
-        rows: living(view).map((p) => ({ who: p.name, what: d.votes?.[p.id] ? '已投' : '还在犹豫' })),
+        rows: (pool ? living(view).filter((p) => pool.includes(p.id)) : living(view)).map((p) => ({
+          who: p.name,
+          what: d.votes?.[p.id] ? '已投' : '还在犹豫',
+        })),
       }
     }
     if (view.phase === 'reveal') {
@@ -92,8 +99,8 @@ const spyUI: GameUI = {
         .sort((a, b) => b.value - a.value)
       const out = d.lastOut
       return {
-        eyebrow: `第 ${view.round} 轮 · 揭晓`,
-        focus: out ? `${nameOf(view, out)} 出局` : '这轮平票',
+        eyebrow: `第 ${view.round} / ${d.maxRound ?? 6} 轮 · 揭晓`,
+        focus: out ? `${nameOf(view, out)} 出局` : '这轮没人出局',
         focusHint: out ? '他的身份已经在大屏右侧的播报里说明' : '没有人被抬走，尴尬的是你们',
         tone: out ? 'danger' : 'normal',
         bars,

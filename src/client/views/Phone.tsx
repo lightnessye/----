@@ -205,9 +205,13 @@ export function Phone({ code, token }: { code: string; token: string | null }) {
 }
 
 function TimerRow({ view, now, secondsLeft }: { view: RoomView; now: number; secondsLeft: number | null }) {
+  void now
+  const max = Number(view.publicData?.[view.gameId]?.maxRound ?? 0)
+  const label =
+    view.round > 0 ? (max > 0 ? `第 ${view.round} / ${max} 轮 · 剩余` : `第 ${view.round} 轮 · 剩余`) : '本轮剩余'
   return (
     <div className="row between">
-      <span className="dim">本轮剩余</span>
+      <span className="dim">{label}</span>
       <span className={`mono ${secondsLeft !== null && secondsLeft <= 5 ? 'chip hot' : ''}`} style={{ fontWeight: 800 }}>
         {secondsLeft} 秒
       </span>
