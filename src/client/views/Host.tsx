@@ -9,7 +9,7 @@ import { StageView } from '../ui/StageView'
 import { RefereeConsole } from '../ui/RefereeConsole'
 import { joinHref, phoneHref, shareJoinHref } from '../route'
 import { WOLF_VARIANTS } from '../../shared/werewolf'
-import type { RoomView } from '../../shared/types'
+import type { Player, RoomView } from '../../shared/types'
 
 export function Host({ code, token, watch }: { code: string; token: string | null; watch?: boolean }) {
   const { view, error, secondsLeft, now, run, step, offline, refresh } = useRoom(code, token, watch)

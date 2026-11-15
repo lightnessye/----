@@ -211,7 +211,7 @@ export function touch(room: Room) {
 /** 房主在 lobby 里设定裁判模式、真人裁判，以及有变体的游戏的模式 */
 export function configureRoom(
   room: Room,
-  opts: { judgeMode?: 'ai' | 'human'; refereeId?: string | null; variant?: string },
+  opts: { judgeMode?: 'ai' | 'human'; refereeId?: string | null; variant?: string; game?: Record<string, unknown> },
 ): string | null {
   const meta = GAME_BY_ID[room.gameId]
   if (opts.variant !== undefined) {
