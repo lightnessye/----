@@ -64,6 +64,7 @@ export function Phone({ code, token }: { code: string; token: string | null }) {
   const spec = ui.input?.(view) ?? null
   const isLobby = view.phase === 'lobby'
   const isOver = view.phase === 'over'
+  const isPicking = view.phase === 'picking'
   const turnId = ui.turnId?.(view) ?? null
   const myTurn = !!view.me && turnId === view.me.id
   const extras = (ui.extras ?? []).filter((x) => view.me && x.when(view, view.me))
@@ -89,6 +90,8 @@ export function Phone({ code, token }: { code: string; token: string | null }) {
 
         {isLobby ? (
           <LobbyPhone view={view} run={run} />
+        ) : isPicking ? (
+          <PickingPhone view={view} run={run} />
         ) : (
           <>
             <SecretCard view={view} />
@@ -377,6 +380,36 @@ function SecretCard({ view }: { view: RoomView }) {
   }
 
   return null
+}
+
+/** picking 阶段：玩家什么都不用做，等房主选完自动进新游戏大厅 */
+function PickingPhone({
+  view,
+  run,
+}: {
+  view: RoomView
+  run: (action: string, payload?: unknown) => Promise<string | null>
+}) {
+  return (
+    <>
+      <div className="card accent">
+        <h2>房主正在选下一局</h2>
+        <p className="sub">
+          你还是 {view.me?.seat} 号 · {view.me?.name}。选好后这里会自动变成新游戏的大厅，不用重新进房间。
+        </p>
+      </div>
+      <div className="panel">
+        <div className="h">在场的人</div>
+        <Seats view={view} />
+      </div>
+      <div className="panel">
+        <div className="h">最新播报</div>
+        <Ticker events={view.events} limit={5} />
+      </div>
+      <VoicePanel view={view} run={run} />
+      <ChatPanel view={view} onSend={(t) => run('chat', { text: t })} height={240} />
+    </>
+  )
 }
 
 function LobbyPhone({

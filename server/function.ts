@@ -11,6 +11,8 @@ import {
   joinRoute,
   metaBody,
   nextRoute,
+  pickRoute,
+  resetRoute,
   viewRoute,
   voiceGetRoute,
   voicePostRoute,
@@ -67,7 +69,7 @@ export function application(deps: { db: any; BackendError: new (code: string, st
       return json(await voiceGetRoute(normalize(voice[1]), get('token'), Number(get('since') ?? 0) || 0))
     }
 
-    const sub = path.match(/^\/api\/rooms\/([^/]+)\/(action|next|configure|voice)$/)
+    const sub = path.match(/^\/api\/rooms\/([^/]+)\/(action|next|configure|voice|reset|pick)$/)
     if (sub) {
       const code = normalize(sub[1])
       const body = await readJson(request)
@@ -75,6 +77,8 @@ export function application(deps: { db: any; BackendError: new (code: string, st
       if (sub[2] === 'action') return json(await actionRoute(code, token, String(body?.action ?? ''), body?.payload))
       if (sub[2] === 'next') return json(await nextRoute(code, token, !!body?.force))
       if (sub[2] === 'voice') return json(await voicePostRoute(code, token, body))
+      if (sub[2] === 'reset') return json(await resetRoute(code, token))
+      if (sub[2] === 'pick') return json(await pickRoute(code, token, String(body?.gameId ?? '')))
       return json(
         await configureRoute(code, token, {
           judgeMode: body?.judgeMode === undefined ? undefined : body.judgeMode === 'human' ? 'human' : 'ai',
