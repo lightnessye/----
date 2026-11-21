@@ -1,9 +1,18 @@
 import { useState } from 'react'
+<<<<<<< HEAD
 import { configure, disbandRoom, kickPlayer, restartRoom } from '../api'
 import { useRoom } from '../hooks/useRoom'
 import { useShareBase } from '../hooks/useShareBase'
 import { uiFor } from '../games'
 import { JudgeBadge, QrImage, Scoreboard, SpeakBoard, Ticker, Timer, fmtSpeak } from '../ui/common'
+=======
+import { configure, pickGame, resetToPicking } from '../api'
+import { useRoom } from '../hooks/useRoom'
+import { useShareBase } from '../hooks/useShareBase'
+import { uiFor } from '../games'
+import { GAMES } from '../../shared/games'
+import { JudgeBadge, QrImage, Seats, Scoreboard, SpeakBoard, Ticker, Timer, fmtSpeak } from '../ui/common'
+>>>>>>> 1e4f489806bd00e01da87f9263e5bdf1bef7f5f2
 import { ChatPanel } from '../ui/ChatPanel'
 import { VoicePanel } from '../ui/VoicePanel'
 import { GameSettings } from '../ui/GameSettings'
@@ -20,8 +29,13 @@ import type { Player, RoomView } from '../../shared/types'
 
 export function Host({ code, token, watch }: { code: string; token: string | null; watch?: boolean }) {
   const { view, error, secondsLeft, now, run, step, offline, refresh } = useRoom(code, token, watch)
+<<<<<<< HEAD
   const [rules, setRules] = useState(false)
   const [overErr, setOverErr] = useState<string | null>(null)
+=======
+  const [resetErr, setResetErr] = useState<string | null>(null)
+  const [resetting, setResetting] = useState(false)
+>>>>>>> 1e4f489806bd00e01da87f9263e5bdf1bef7f5f2
 
   if (error && !view) {
     return (
@@ -50,6 +64,23 @@ export function Host({ code, token, watch }: { code: string; token: string | nul
   const model = ui.stage(view)
   const isLobby = view.phase === 'lobby'
   const isOver = view.phase === 'over'
+  const isPicking = view.phase === 'picking'
+
+  /** 结算页「再选游戏」：通知服务端把房间切到选游戏阶段，所有端靠轮询同步 */
+  const handleReset = async () => {
+    if (!token || resetting) return
+    if (!confirm('换个游戏？本局分数会清零，所有人都会进入选游戏环节。')) return
+    setResetting(true)
+    setResetErr(null)
+    try {
+      const r = await resetToPicking(view.code, token)
+      if (r.error) setResetErr(r.error)
+      else refresh()
+    } catch (e: any) {
+      setResetErr(e?.message ?? '操作失败，重试一下')
+    }
+    setResetting(false)
+  }
 
   // 房主以玩家身份开局：直接进玩家界面，主持操作在那条主持栏里
   const hostIsPlayer =
@@ -92,19 +123,24 @@ export function Host({ code, token, watch }: { code: string; token: string | nul
         ) : (
           <div className="stage-body">
             <div className="stage-main">
-              <StageView model={model} />
-              {['describe', 'speak', 'show', 'run', 'hunt'].includes(view.phase) && (
-                <div style={{ marginTop: 22, maxWidth: 420 }}>
-                  <Timer view={view} now={now} secondsLeft={secondsLeft} />
-                  {['describe', 'speak', 'show', 'run'].includes(view.phase) && (
-                    <p className="dim" style={{ marginTop: 8 }}>
-                      每人发言上限 {view.speakSeconds != null ? `${view.speakSeconds} 秒` : '默认'}
-                      {view.speakingId ? ' · 计时中' : ''}
-                    </p>
+              {isPicking ? (
+                <GamePicker view={view} token={token} refresh={refresh} />
+              ) : (
+                <>
+                  <StageView model={model} />
+                  {['describe', 'speak', 'show', 'run', 'hunt'].includes(view.phase) && (
+                    <div style={{ marginTop: 22, maxWidth: 420 }}>
+                      <Timer view={view} now={now} secondsLeft={secondsLeft} />
+                      {['describe', 'speak', 'show', 'run'].includes(view.phase) && (
+                        <p className="dim" style={{ marginTop: 8 }}>
+                          每人发言上限 {view.speakSeconds != null ? `${view.speakSeconds} 秒` : '默认'}
+                          {view.speakingId ? ' · 计时中' : ''}
+                        </p>
+                      )}
+                    </div>
                   )}
-                </div>
-              )}
 
+<<<<<<< HEAD
               {!watch && (
                 <div className="stagebar">
                   {isOver ? (
@@ -129,30 +165,84 @@ export function Host({ code, token, watch }: { code: string; token: string | nul
                     >
                       提前结束
                     </button>
+=======
+                  {!watch && (
+                    <div className="stagebar">
+                      <button className="btn go" onClick={() => void step()}>
+                        {isOver ? '停在这一页' : '下一步 →'}
+                      </button>
+                      {isOver && (
+                        <button className="btn" disabled={resetting} onClick={() => void handleReset()}>
+                          {resetting ? '正在切换…' : '再选游戏'}
+                        </button>
+                      )}
+                      <a className="btn ghost tiny" href={joinHref(view.code)}>
+                        手机加入页
+                      </a>
+                      {view.me &&
+                        view.hostPlays &&
+                        !(view.judgeMode === 'human' && view.refereeId === view.me.id) && (
+                        <a
+                          className="btn ghost tiny"
+                          href={phoneHref(view.code)}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="在新标签页打开你自己的玩家页，轮到你时在那里提交"
+                        >
+                          我也玩
+                        </a>
+                      )}
+                      {!isOver && (
+                        <button
+                          className="btn ghost tiny"
+                          onClick={() => {
+                            if (confirm('直接结算这一局？正在填写的内容会丢掉。')) void step()
+                          }}
+                          style={{ marginLeft: 'auto' }}
+                        >
+                          提前结束
+                        </button>
+                      )}
+                    </div>
                   )}
-                </div>
+                  {resetErr && (
+                    <div className="banner err" style={{ marginTop: 12 }}>
+                      {resetErr}
+                    </div>
+>>>>>>> 1e4f489806bd00e01da87f9263e5bdf1bef7f5f2
+                  )}
+                </>
               )}
               {overErr && <div className="banner err" style={{ marginTop: 10 }}>{overErr}</div>}
             </div>
 
             <div className="stage-side">
+<<<<<<< HEAD
               {!watch && <RefereeConsole view={view} run={run} />}
+=======
+              {!watch && !isPicking && <RefereeConsole view={view} run={run} />}
+              {!watch && !isPicking && <SpeakLimit view={view} token={token} />}
+>>>>>>> 1e4f489806bd00e01da87f9263e5bdf1bef7f5f2
               <div className="panel">
                 <div className="h">裁判播报</div>
                 <Ticker events={view.events} limit={9} />
               </div>
               <div className="panel">
                 <div className="h">在场玩家</div>
+<<<<<<< HEAD
                 <PlayerGrid view={view} turnId={ui.turnId?.(view) ?? null} />
+=======
+                <Seats view={view} turnId={isPicking ? null : ui.turnId?.(view) ?? null} compact />
+>>>>>>> 1e4f489806bd00e01da87f9263e5bdf1bef7f5f2
               </div>
-              <SpeakBoard view={view} now={now} />
+              {!isPicking && <SpeakBoard view={view} now={now} />}
               <VoicePanel view={view} run={run} />
               <ChatPanel
                 view={view}
                 onSend={watch ? undefined : (t) => run('chat', { text: t })}
                 height={240}
               />
-              {view.judgeMode === 'ai' && (
+              {view.judgeMode === 'ai' && !isPicking && (
                 <div className="panel">
                   <div className="h">分数</div>
                   <Scoreboard players={view.players} />
@@ -551,6 +641,78 @@ function SpeakLimit({ view, token }: { view: RoomView; token: string | null }) {
         轮到每个人发言 / 表演时的倒计时上限。开局后锁定，玩到一半不能改；默认按各游戏推荐值。
       </p>
       {err && <div className="banner err" style={{ marginTop: 10 }}>{err}</div>}
+    </div>
+  )
+}
+
+/** picking 阶段：房主在房间里直接挑下一局，其他端只能看。复用首页候选列表的 .alts/.alt 样式。 */
+function GamePicker({
+  view,
+  token,
+  refresh,
+}: {
+  view: RoomView
+  token: string | null
+  refresh: () => void
+}) {
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const n = view.players.length
+  const canPick = !!token && view.role === 'host'
+
+  const choose = async (gameId: string) => {
+    if (!token || busy) return
+    setBusy(true)
+    setErr(null)
+    try {
+      const r = await pickGame(view.code, token, gameId)
+      if (r.error) setErr(r.error)
+      else refresh()
+    } catch (e: any) {
+      setErr(e?.message ?? '选游戏失败，重试一下')
+    }
+    setBusy(false)
+  }
+
+  return (
+    <div className="panel">
+      <div className="h">再选一局</div>
+      <p className="sub" style={{ marginBottom: 12 }}>
+        {canPick
+          ? '房间号和人都还在，挑一个接着玩。选好后大家自动进新游戏的大厅。'
+          : '房主正在挑下一个游戏，选好了这里会自动变成新游戏的大厅。'}
+      </p>
+      {err && (
+        <div className="banner err" style={{ marginBottom: 12 }}>
+          {err}
+        </div>
+      )}
+      <div className="alts">
+        {GAMES.map((g) => {
+          const fit = n >= g.minPlayers && n <= g.maxPlayers
+          return (
+            <button
+              key={g.id}
+              type="button"
+              className="alt"
+              disabled={!canPick || busy || !fit}
+              onClick={() => void choose(g.id)}
+            >
+              <span className="e">{g.emoji}</span>
+              <span>
+                <div className="n">
+                  {g.name}
+                  {g.id === view.gameId ? '（刚才玩的）' : ''}
+                </div>
+                <div className="t">{fit ? g.tagline : `要 ${g.minPlayers}–${g.maxPlayers} 人，现在 ${n} 人`}</div>
+              </span>
+              <span className="m">
+                {g.minutes[0]}–{g.minutes[1]} 分钟
+              </span>
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }

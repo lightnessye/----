@@ -21,8 +21,13 @@ import {
   nextStep,
   forceEnd,
   normalize,
+<<<<<<< HEAD
   removeRoom,
   restartRoom,
+=======
+  pickGame,
+  resetToPicking,
+>>>>>>> 1e4f489806bd00e01da87f9263e5bdf1bef7f5f2
   roomCount,
   sanitizeName,
   startRoom,
@@ -200,4 +205,21 @@ export async function voicePostRoute(code: string, token: string, payload: any):
   const result = await mutateRoom(normalize(code), (room) => postVoice(room, token, payload))
   if (!result.ok) return bad(404, result.reason === 'conflict' ? '语音信令没写上，再试一次' : '房间不存在或已结束')
   return ok({ error: result.value })
+}
+
+/** 结算页「再选游戏」：房主把房间切到选游戏阶段，所有端轮询后同步 */
+export async function resetRoute(code: string, token: string): Promise<ApiResponse> {
+  const result = await mutateRoom(normalize(code), (room) => {
+    advance(room, Date.now())
+    return resetToPicking(room, token)
+  })
+  if (!result.ok) return bad(404, result.reason === 'conflict' ? '这一步没写上，再点一次' : '房间不存在或已结束')
+  return ok({ error: result.value, view: buildView(result.room, token) })
+}
+
+/** 选游戏阶段房主拍板下一局 */
+export async function pickRoute(code: string, token: string, gameId: string): Promise<ApiResponse> {
+  const result = await mutateRoom(normalize(code), (room) => pickGame(room, token, gameId))
+  if (!result.ok) return bad(404, result.reason === 'conflict' ? '这一步没写上，再点一次' : '房间不存在或已结束')
+  return ok({ error: result.value, view: buildView(result.room, token) })
 }
