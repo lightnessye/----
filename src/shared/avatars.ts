@@ -6,6 +6,8 @@ export interface AvatarDef {
   label: string
   from: string
   to: string
+  /** 自定义照片头像的 dataURL；有它时渲染图片而不是 emoji */
+  photo?: string
 }
 
 export const AVATARS: AvatarDef[] = [
@@ -31,8 +33,21 @@ export const AVATAR_BY_ID: Record<string, AvatarDef> = Object.fromEntries(
   AVATARS.map((a) => [a.id, a]),
 )
 
+/** 照片头像：客户端压到 96px JPEG 的 dataURL，限长防止塞爆房间存储 */
+export const PHOTO_AVATAR_MAX = 24_000
+export function isPhotoAvatar(id: unknown): id is string {
+  return (
+    typeof id === 'string' &&
+    id.length <= PHOTO_AVATAR_MAX &&
+    /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(id)
+  )
+}
+
 /** 没挑过 / 传来的 id 不认识时，按座位号发一个，保证人人有头像 */
 export function avatarFor(id: unknown, seat = 1): AvatarDef {
+  if (isPhotoAvatar(id)) {
+    return { id, emoji: '📷', label: '自定义照片', from: '#9adbc8', to: '#0a9f83', photo: id }
+  }
   if (typeof id === 'string' && AVATAR_BY_ID[id]) return AVATAR_BY_ID[id]
   return AVATARS[(Math.max(1, Math.round(seat)) - 1) % AVATARS.length]
 }

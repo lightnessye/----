@@ -73,7 +73,7 @@ export function application(deps: { db: any; BackendError: new (code: string, st
       const body = await readJson(request)
       const token = String(body?.token ?? '')
       if (sub[2] === 'action') return json(await actionRoute(code, token, String(body?.action ?? ''), body?.payload))
-      if (sub[2] === 'next') return json(await nextRoute(code, token, !!body?.force))
+      if (sub[2] === 'next') return json(await nextRoute(code, token, !!body?.force, !!body?.finish))
       if (sub[2] === 'voice') return json(await voicePostRoute(code, token, body))
       return json(
         await configureRoute(code, token, {
@@ -82,6 +82,7 @@ export function application(deps: { db: any; BackendError: new (code: string, st
           variant: body?.variant === undefined ? undefined : String(body.variant),
           speakSeconds:
             body?.speakSeconds === undefined ? undefined : body.speakSeconds === null ? null : Number(body.speakSeconds),
+          game: body?.game,
         }),
       )
     }

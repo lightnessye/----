@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { GAME_BY_ID } from '../../shared/games'
-import { forgetRoom, go, hostHref, joinHref, recentRooms, tokenFor } from '../route'
+import { forgetRoom, go, hostHref, joinHref, recentRooms, tokenFor, watchHref } from '../route'
 
 function when(at: number) {
   const diff = Date.now() - at
@@ -19,13 +19,13 @@ export function RecentRooms({ onPick }: { onPick?: (code: string) => void }) {
   const [list, setList] = useState(recentRooms)
   if (!list.length) return null
 
-  const enter = (code: string, role: 'host' | 'player') => {
+  const enter = (code: string, role: 'host' | 'player' | 'watcher') => {
     if (!tokenFor(code)) {
       if (onPick) onPick(code)
       else go(joinHref(code))
       return
     }
-    go(role === 'host' ? hostHref(code) : `/p.html?c=${code}`)
+    go(role === 'host' ? hostHref(code) : role === 'watcher' ? watchHref(code) : `/p.html?c=${code}`)
   }
 
   return (
@@ -41,7 +41,7 @@ export function RecentRooms({ onPick }: { onPick?: (code: string) => void }) {
                 <span className="recent-copy">
                   <b className="mono">{r.code}</b>
                   <span>
-                    {meta?.name ?? '未知游戏'} · {r.role === 'host' ? '我是房主' : '我是玩家'} · {when(r.at)}
+                    {meta?.name ?? '未知游戏'} · {r.role === 'host' ? '我是房主' : r.role === 'watcher' ? '我在观战' : '我是玩家'} · {when(r.at)}
                   </span>
                 </span>
                 <span className="recent-go">{tokenFor(r.code) ? '进入 →' : '重填名字 →'}</span>

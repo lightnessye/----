@@ -8,13 +8,17 @@ import {
   actionRoute,
   configureRoute,
   createRoomRoute,
+  disbandRoute,
   health,
   joinRoute,
+  kickRoute,
   metaBody,
   nextRoute,
+  restartRoute,
   viewRoute,
   voiceGetRoute,
   voicePostRoute,
+  watchJoinRoute,
   type ApiResponse,
 } from './api'
 
@@ -65,6 +69,10 @@ api.get('/health', route(() => health()))
 api.get('/meta', route((req) => metaBody(requestOrigin(req), lanOrigin())))
 api.post('/rooms', route((req) => createRoomRoute(req.body ?? {})))
 api.post('/join', route((req) => joinRoute(req.body ?? {})))
+api.post('/watch-join', route((req) => watchJoinRoute(req.body ?? {})))
+api.post('/rooms/:code/kick', route((req) => kickRoute(code(req), String(req.body?.token ?? ''), String(req.body?.target ?? ''))))
+api.post('/rooms/:code/disband', route((req) => disbandRoute(code(req), String(req.body?.token ?? ''))))
+api.post('/rooms/:code/restart', route((req) => restartRoute(code(req), String(req.body?.token ?? ''))))
 api.get(
   '/rooms/:code',
   route((req) => viewRoute(code(req), token(req), req.query.watch === '1')),
@@ -83,7 +91,7 @@ api.post(
 )
 api.post(
   '/rooms/:code/next',
-  route((req) => nextRoute(code(req), String(req.body?.token ?? ''), !!req.body?.force)),
+  route((req) => nextRoute(code(req), String(req.body?.token ?? ''), !!req.body?.force, !!req.body?.finish)),
 )
 api.post(
   '/rooms/:code/configure',
@@ -97,12 +105,15 @@ api.post(
             ? null
             : String(req.body.refereeId),
       variant: req.body?.variant === undefined ? undefined : String(req.body.variant),
+      hostPlays: req.body?.hostPlays === undefined ? undefined : !!req.body.hostPlays,
+      gameId: req.body?.gameId === undefined ? undefined : String(req.body.gameId),
       speakSeconds:
         req.body?.speakSeconds === undefined
           ? undefined
           : req.body.speakSeconds === null
             ? null
             : Number(req.body.speakSeconds),
+      game: req.body?.game,
     }),
   ),
 )

@@ -68,6 +68,27 @@ function botMove(view, selfId) {
     return null
   }
 
+  if (g === 'werewolf') {
+    const role = view.secret?.role
+    if (n.input === 'pick' && !n.submitted) {
+      const opts = n.options ?? []
+      if (!opts.length) return null
+      const key = n.valueKey ?? 'value'
+      const pick = () => one(opts.map((o) => o.value))
+      if (view.phase === 'night') {
+        if (role === 'wolf') return { action: 'wolfKill', payload: { [key]: pick() } }
+        if (role === 'seer') return { action: 'seerCheck', payload: { [key]: pick() } }
+        if (role === 'witch') return { action: 'witchAct', payload: { [key]: 'skip' } }
+        if (role === 'guard') return { action: 'guardPick', payload: { [key]: pick() } }
+        return null
+      }
+      if (view.phase === 'vote') return { action: 'vote', payload: { [key]: pick() } }
+      return null
+    }
+    if (n.input === 'text' && !n.submitted) return { action: 'speak', payload: { text: one(DESCRIPTIONS) } }
+    return null
+  }
+
   if (n.input === 'three') return { action: 'write', payload: { statements: [one(CLAIMS), one(DESCRIPTIONS), one(LINES)], lieIndex: 1 } }
   if (n.input === 'number') {
     const m = /(\d+)\s*到\s*(\d+)/.exec(n.inputHint ?? '')
@@ -175,15 +196,19 @@ async function playGame(gameId, count, judgeMode, gameOpts) {
     final = (await j(`/api/rooms/${code}?token=${host}`)).view
   }
   const scores = final.players.map((p) => `${p.name}:${p.score}`)
-  const ok = final.phase === 'over' && !!final.finished
+  const board = final.finished?.board ?? []
+  const boardOk =
+    board.length > 0 &&
+    board.every((b, i) => typeof b.rank === 'number' && (i === 0 || board[i - 1].score >= b.score))
+  const ok = final.phase === 'over' && !!final.finished && boardOk
   const tag = ok ? '✓' : '✗'
   const variant = gameOpts ? ` ${JSON.stringify(gameOpts)}` : ''
   console.log(
     `${tag} ${gameId}(${judgeMode}) ${count}人${variant} iters=${iter} phases=${phases.join('>') || '—'} ` +
-      `winner=${(final.finished?.winners ?? []).map((w) => w.name).join('、') || '无'} 分=${scores.join(' ')} 事件=${final.events.length}`,
+      `winner=${(final.finished?.winners ?? []).map((w) => w.name).join('、') || '无'} 榜=${board.length}人${board.some((b) => b.win) ? '(有胜方)' : ''} 分=${scores.join(' ')} 事件=${final.events.length}`,
   )
   if (leaks.length) console.log('   !! 泄露:', [...new Set(leaks)].slice(0, 3).join(' / '))
-  if (!ok) console.log('   !! 没打完，卡在', final.phase, JSON.stringify(final.needs))
+  if (!ok) console.log('   !! 没打完或排行榜异常，卡在', final.phase, JSON.stringify(final.needs))
   return ok && leaks.length === 0
 }
 
@@ -290,6 +315,8 @@ const TABLE = [
   ['story', 5, 'ai'],
   ['never', 5, 'ai'],
   ['mime', 5, 'ai'],
+  ['werewolf', 6, 'ai'],
+  ['werewolf', 12, 'ai'],
 ]
 
 const wanted = process.argv.slice(2)

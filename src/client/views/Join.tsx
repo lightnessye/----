@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { joinRoom } from '../api'
-import { go, saveToken } from '../route'
+import { joinRoom, watchJoinRoom } from '../api'
+import { go, saveToken, watchHref } from '../route'
 import { RecentRooms } from '../ui/RecentRooms'
 import { ROOM_CODE_LENGTH } from '../../shared/types'
 import { sanitizeAvatar } from '../../shared/avatars'
@@ -29,6 +29,23 @@ export function Join({ initialCode }: { initialCode: string }) {
       localStorage.setItem('icebreaker.name', name.trim())
       saveToken(res.code, res.token, { gameId: res.view.gameId, role: 'player' })
       go(`/p.html?c=${res.code}`)
+    } catch (e: any) {
+      setErr(e?.message ?? '进不去这个房间')
+      setBusy(false)
+    }
+  }
+
+  const watchSubmit = async () => {
+    if (code.length !== ROOM_CODE_LENGTH)
+      return setErr(`房间号是 ${ROOM_CODE_LENGTH} 位，看看大屏上的方块数字`)
+    if (!name.trim()) return setErr('观战也留个名字，大家知道是谁在看')
+    setBusy(true)
+    setErr(null)
+    try {
+      const res = await watchJoinRoom(code.toUpperCase(), name.trim(), avatar)
+      localStorage.setItem('icebreaker.name', name.trim())
+      saveToken(res.code, res.token, { gameId: res.view.gameId, role: 'watcher' })
+      go(watchHref(res.code))
     } catch (e: any) {
       setErr(e?.message ?? '进不去这个房间')
       setBusy(false)
@@ -94,6 +111,14 @@ export function Join({ initialCode }: { initialCode: string }) {
               onClick={() => void submit()}
             >
               {busy ? <span className="spin" /> : '进场'}
+            </button>
+            <button
+              className="btn ghost"
+              style={{ marginTop: 10, width: '100%' }}
+              disabled={busy}
+              onClick={() => void watchSubmit()}
+            >
+              👀 不玩，先观战
             </button>
           </div>
 

@@ -5,22 +5,38 @@ import { uiFor } from '../games'
 import { PlayerInput } from '../ui/PlayerInput'
 import { QuickPhrases } from '../ui/QuickPhrases'
 import { RefereeConsole } from '../ui/RefereeConsole'
-import { JudgeBadge, Seats, Ticker, fmtSpeak } from '../ui/common'
+import { JudgeBadge, Ticker, fmtSpeak } from '../ui/common'
 import { AvatarBadge, AvatarPicker } from '../ui/Avatar'
 import { ChatPanel } from '../ui/ChatPanel'
 import { VoicePanel } from '../ui/VoicePanel'
+import { PlayerGrid } from '../ui/PlayerGrid'
+import { SpectatorBar } from '../ui/SpectatorBar'
+import { RulesModal } from '../ui/RulesModal'
 import { Result } from './Host'
-import { go, joinHref, shareHostHref, tokenFor } from '../route'
+import { WatchBody } from './Watch'
+import { restartRoom } from '../api'
+import { forgetRoom, go, joinHref, shareHostHref, tokenFor } from '../route'
 import type { RoomView, WolfRole } from '../../shared/types'
 import { sanitizeAvatar } from '../../shared/avatars'
 import { ROLE_LABEL } from '../../shared/werewolf'
 
 const nameIn = (view: RoomView, id: string) => view.players.find((p) => p.id === id)?.name ?? '某人'
 
-export function Phone({ code, token }: { code: string; token: string | null }) {
-  const { view, error, secondsLeft, now, run, offline } = useRoom(code, token)
+export function Phone({
+  code,
+  token,
+  asHost,
+}: {
+  code: string
+  token: string | null
+  /** 房主选了「我也玩」：开局后这就是房主本人的界面，多一条主持栏 */
+  asHost?: boolean
+}) {
+  const { view, error, secondsLeft, now, run, step, refresh, offline } = useRoom(code, token)
   const [text, setText] = useState('')
   const [openExtra, setOpenExtra] = useState<string | null>(null)
+  const [rules, setRules] = useState(false)
+  const [hostErr, setHostErr] = useState<string | null>(null)
   const base = useShareBase()
 
   if (!token) {
@@ -38,13 +54,26 @@ export function Phone({ code, token }: { code: string; token: string | null }) {
   }
 
   if (error && !view) {
+    const gone = error.includes('移出房间') || error.includes('解散')
     return (
       <div className="app">
         <div className="wrap center-v center" style={{ minHeight: '80vh' }}>
           <h2>{error}</h2>
-          <a className="btn" href={joinHref(code)}>
-            回加入页
-          </a>
+          {gone ? (
+            <button
+              className="btn primary big"
+              onClick={() => {
+                forgetRoom(code)
+                go('/')
+              }}
+            >
+              回首页
+            </button>
+          ) : (
+            <a className="btn" href={joinHref(code)}>
+              回加入页
+            </a>
+          )}
         </div>
       </div>
     )
@@ -60,6 +89,10 @@ export function Phone({ code, token }: { code: string; token: string | null }) {
     )
   }
 
+  if (view.role === 'watcher') {
+    return <WatchBody view={view} run={run} now={now} secondsLeft={secondsLeft} offline={offline} />
+  }
+
   const ui = uiFor(view)
   const spec = ui.input?.(view) ?? null
   const isLobby = view.phase === 'lobby'
@@ -67,6 +100,14 @@ export function Phone({ code, token }: { code: string; token: string | null }) {
   const turnId = ui.turnId?.(view) ?? null
   const myTurn = !!view.me && turnId === view.me.id
   const extras = (ui.extras ?? []).filter((x) => view.me && x.when(view, view.me))
+  const isReferee = view.judgeMode === 'human' && view.refereeId === view.me?.id
+  const canExit = !!view.me && !view.me.isHost && !isReferee && !isOver
+  const backToLobby = async () => {
+    if (!token) return
+    const r = await restartRoom(code, token)
+    setHostErr(r.error ?? null)
+    if (!r.error) refresh()
+  }
 
   return (
     <div className="app">
@@ -82,13 +123,49 @@ export function Phone({ code, token }: { code: string; token: string | null }) {
             </div>
           </div>
           <div className="row" style={{ gap: 6 }}>
+            <button type="button" className="btn tiny" onClick={() => setRules(true)}>
+              📖 规则
+            </button>
             <JudgeBadge view={view} />
             {offline && <span className="chip" style={{ color: 'var(--bad)' }}>重连中</span>}
           </div>
         </div>
 
+        <SpectatorBar view={view} />
+
+        <div className="panel" style={{ marginTop: 14 }}>
+          <div className="h">场上玩家</div>
+          <PlayerGrid view={view} turnId={turnId} />
+        </div>
+
+        {asHost && !isLobby && (
+          <div className="host-bar" style={{ marginTop: 14 }}>
+            <span className="hb-label">👑 房主主持</span>
+            {!isOver ? (
+              <>
+                <button className="btn go" onClick={() => void step()}>
+                  下一步 →
+                </button>
+                <button
+                  className="btn ghost tiny"
+                  onClick={() => {
+                    if (confirm('直接结算这一局？正在填写的内容会丢掉。')) void step(true)
+                  }}
+                >
+                  提前结束
+                </button>
+              </>
+            ) : (
+              <button className="btn primary" onClick={() => void backToLobby()}>
+                返回大厅 · 开下一局
+              </button>
+            )}
+            {hostErr && <span className="chat-err">{hostErr}</span>}
+          </div>
+        )}
+
         {isLobby ? (
-          <LobbyPhone view={view} run={run} />
+          <LobbyPhone view={view} run={run} canExit={canExit} />
         ) : (
           <>
             <SecretCard view={view} />
@@ -211,34 +288,49 @@ export function Phone({ code, token }: { code: string; token: string | null }) {
             )}
 
             <div style={{ marginTop: 18 }}>
-              <QuickPhrases onSay={(t) => run('say', { text: t })} />
-            </div>
-
-            <div className="panel" style={{ marginTop: 18 }}>
-              <div className="h">最新播报</div>
-              <Ticker events={view.events} limit={5} />
-            </div>
-
-            <div className="panel">
-              <div className="h">在场</div>
-              <Seats view={view} turnId={turnId} compact />
-            </div>
-
-            <div style={{ marginTop: 14 }}>
               <VoicePanel view={view} run={run} />
             </div>
 
             <div style={{ marginTop: 14 }}>
-              <ChatPanel view={view} onSend={(t) => run('chat', { text: t })} height={260} />
+              <QuickPhrases onSay={(t) => run('say', { text: t })} />
             </div>
+
+            <div style={{ marginTop: 14 }}>
+              <ChatPanel view={view} onSend={(t) => run('chat', { text: t })} height={260} defaultOpen={false} />
+            </div>
+
+            <div className="panel" style={{ marginTop: 14 }}>
+              <div className="h">最新播报</div>
+              <Ticker events={view.events} limit={5} />
+            </div>
+
+            {canExit && <ExitWatchButton run={run} />}
 
             <p className="notice center" style={{ marginTop: 16 }}>
               投屏上的主持人页需要另一台设备打开：{shareHostHref(view.code, base)}
             </p>
           </>
         )}
+
+        {rules && <RulesModal view={view} onClose={() => setRules(false)} />}
       </div>
     </div>
+  )
+}
+
+function ExitWatchButton({ run }: { run: (action: string, payload?: unknown) => Promise<string | null> }) {
+  return (
+    <button
+      className="btn ghost"
+      style={{ width: '100%', marginTop: 14, color: 'var(--bad)' }}
+      onClick={() => {
+        if (confirm('退到观战席？你的座位会空出来，观战的人可以接替；你随时能回来。')) {
+          void run('spectate')
+        }
+      }}
+    >
+      👀 不想玩了，退到观战席
+    </button>
   )
 }
 
@@ -382,14 +474,16 @@ function SecretCard({ view }: { view: RoomView }) {
 function LobbyPhone({
   view,
   run,
+  canExit,
 }: {
   view: RoomView
   run: (action: string, payload?: unknown) => Promise<string | null>
+  canExit: boolean
 }) {
   const host = view.players.find((p) => p.isHost)
   return (
     <>
-      <div className="card accent">
+      <div className="card accent" style={{ marginTop: 14 }}>
         <h2>等房主点开始</h2>
         <p className="sub">
           你现在是 {view.me?.seat} 号 · {view.me?.name}。房主是 {host?.name}。
@@ -399,11 +493,6 @@ function LobbyPhone({
       <div className="panel">
         <div className="h">这局怎么开始</div>
         <p className="sub">{view.meta.desc}</p>
-        <ol className="howto">
-          {view.meta.howTo.map((h, i) => (
-            <li key={i}>{h}</li>
-          ))}
-        </ol>
         <div className="row" style={{ marginTop: 12 }}>
           <span className="chip">{view.meta.needs.phones === 'each' ? '每一步都要在手机上交' : '主要看大屏'}</span>
           <span className="chip">
@@ -414,17 +503,15 @@ function LobbyPhone({
               {(view.publicData?.spy as any)?.describeMode === 'typed' ? '⌨️ 打字描述' : '🗣 口头描述'}
             </span>
           )}
+          <span className="chip dim">完整规则点右上角「📖 规则」</span>
         </div>
-      </div>
-      <div className="panel">
-        <div className="h">已经进来的人</div>
-        <Seats view={view} />
       </div>
       <VoicePanel view={view} run={run} />
       <ChatPanel view={view} onSend={(t) => run('chat', { text: t })} height={240} />
       <div style={{ marginTop: 14 }}>
         <QuickPhrases onSay={(t) => run('say', { text: t })} />
       </div>
+      {canExit && <ExitWatchButton run={run} />}
       <p className="notice">
         这个页面会自动刷新，不用手动重进。房间号 {view.code}，关掉页面可以从{' '}
         <a href={joinHref(view.code)}>加入页</a> 再进来（名字会重新排一次号）。

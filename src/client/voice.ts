@@ -42,6 +42,7 @@ class Mesh {
   private polling = false
   private lastId = 0
   private stopped = false
+  private speakerOn = true
 
   onStates: (s: Record<string, PeerState>) => void = () => {}
   onTapNeeded: () => void = () => {}
@@ -49,7 +50,17 @@ class Mesh {
   constructor(
     private code: string,
     private token: string,
+    /** 本人在玩家表里的 id；接替座位后令牌和 id 不同，连接判重要认 id */
+    private myId: string,
   ) {}
+
+  /** 扬声器静音：只影响本页面的外放，不影响麦克风和其他人 */
+  setSpeaker(on: boolean) {
+    this.speakerOn = on
+    for (const peer of this.pcs.values()) {
+      if (peer.audio) peer.audio.muted = !on
+    }
+  }
 
   start(stream: MediaStream) {
     this.stream = stream
@@ -74,7 +85,7 @@ class Mesh {
   reconcile(players: Player[]) {
     if (!this.stream || this.stopped) return
     const want = new Set(
-      players.filter((p) => p.micOn && p.connected && p.id !== this.token).map((p) => p.id),
+      players.filter((p) => p.micOn && p.connected && p.id !== this.myId).map((p) => p.id),
     )
     for (const [id, peer] of this.pcs) {
       const stuck =
@@ -84,7 +95,7 @@ class Mesh {
       if (!want.has(id) || stuck || peer.pc.connectionState === 'failed') this.drop(id)
     }
     for (const id of want) {
-      if (!this.pcs.has(id) && this.token < id) this.offerTo(id)
+      if (!this.pcs.has(id) && this.myId < id) this.offerTo(id)
     }
   }
 
@@ -161,6 +172,7 @@ class Mesh {
     if (!peer.audio) {
       const el = document.createElement('audio')
       el.autoplay = true
+      el.muted = !this.speakerOn
       el.style.display = 'none'
       document.body.appendChild(el)
       peer.audio = el
@@ -283,6 +295,9 @@ export interface VoiceState {
   /** 麦在别的页面开着时，把它抢到本页面 */
   takeOver: () => void
   tapListen: () => void
+  /** 扬声器（本页外放）开关，和麦克风互不影响 */
+  speakerOn: boolean
+  toggleSpeaker: () => void
 }
 
 export function useVoice(
@@ -290,7 +305,8 @@ export function useVoice(
   run: (action: string, payload?: unknown) => Promise<string | null>,
 ): VoiceState {
   const code = view?.code ?? null
-  const token = view?.me?.id ?? null
+  const token = view?.myToken ?? view?.me?.id ?? null
+  const myId = view?.me?.id ?? token
   const micOn = !!view?.me?.micOn
   const supported =
     typeof navigator !== 'undefined' &&
@@ -302,6 +318,7 @@ export function useVoice(
   const [needsTap, setNeedsTap] = useState(false)
   const [states, setStates] = useState<Record<string, PeerState>>({})
   const [localActive, setLocalActive] = useState(false)
+  const [speakerOn, setSpeakerOn] = useState(() => localStorage.getItem('icebreaker.speaker') !== '0')
 
   const meshRef = useRef<Mesh | null>(null)
   const startingRef = useRef(false)
@@ -311,6 +328,8 @@ export function useVoice(
   runRef.current = run
   const micOnRef = useRef(micOn)
   micOnRef.current = micOn
+  const myIdRef = useRef(myId)
+  myIdRef.current = myId
   const bcRef = useRef<BroadcastChannel | null>(null)
 
   const stop = useCallback(() => {
@@ -338,9 +357,10 @@ export function useVoice(
         wantRef.current = false
         return
       }
-      const mesh = new Mesh(code, token)
+      const mesh = new Mesh(code, token, myIdRef.current ?? token)
       mesh.onStates = setStates
       mesh.onTapNeeded = () => setNeedsTap(true)
+      mesh.setSpeaker(localStorage.getItem('icebreaker.speaker') !== '0')
       mesh.start(stream)
       meshRef.current = mesh
       setLocalActive(true)
@@ -383,6 +403,19 @@ export function useVoice(
     void start()
   }, [start])
 
+  const toggleSpeaker = useCallback(() => {
+    setSpeakerOn((on) => {
+      const next = !on
+      localStorage.setItem('icebreaker.speaker', next ? '1' : '0')
+      meshRef.current?.setSpeaker(next)
+      return next
+    })
+  }, [])
+
+  useEffect(() => {
+    meshRef.current?.setSpeaker(speakerOn)
+  }, [speakerOn, localActive])
+
   // 同一账号多页面：后开的页面接管麦克风，先开的交出（服务端麦态不变）
   useEffect(() => {
     if (!code || !token || typeof BroadcastChannel === 'undefined') return
@@ -423,8 +456,8 @@ export function useVoice(
   }, [code, token, stop])
 
   const peers = (view?.players ?? [])
-    .filter((p) => p.micOn && p.id !== token)
+    .filter((p) => p.micOn && p.id !== myId)
     .map((p) => ({ id: p.id, name: p.name, state: states[p.id] ?? ('connecting' as PeerState) }))
 
-  return { supported, micOn, localActive, starting, error, needsTap, peers, toggle, takeOver, tapListen }
+  return { supported, micOn, localActive, starting, error, needsTap, peers, toggle, takeOver, tapListen, speakerOn, toggleSpeaker }
 }

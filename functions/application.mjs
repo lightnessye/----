@@ -327,7 +327,14 @@ var AVATARS = [
 var AVATAR_BY_ID = Object.fromEntries(
   AVATARS.map((a) => [a.id, a])
 );
+var PHOTO_AVATAR_MAX = 24e3;
+function isPhotoAvatar(id) {
+  return typeof id === "string" && id.length <= PHOTO_AVATAR_MAX && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(id);
+}
 function avatarFor(id, seat = 1) {
+  if (isPhotoAvatar(id)) {
+    return { id, emoji: "\u{1F4F7}", label: "\u81EA\u5B9A\u4E49\u7167\u7247", from: "#9adbc8", to: "#0a9f83", photo: id };
+  }
   if (typeof id === "string" && AVATAR_BY_ID[id]) return AVATAR_BY_ID[id];
   return AVATARS[(Math.max(1, Math.round(seat)) - 1) % AVATARS.length];
 }
@@ -477,6 +484,53 @@ function rankByScore(players) {
   });
 }
 
+// src/shared/werewolf.ts
+var WOLF_VARIANTS = [
+  {
+    id: "quick",
+    name: "\u901F\u6218",
+    seats: 6,
+    minutes: "15 \u5206\u949F",
+    tagline: "\u4E24\u72FC\u4E00\u9884\u8A00\u5BB6\uFF0C\u6CA1\u6709\u836F\uFF0C\u5168\u9760\u5634\u786C",
+    roster: "2 \u72FC\u4EBA \xB7 1 \u9884\u8A00\u5BB6 \xB7 3 \u6751\u6C11",
+    roles: { wolf: 2, seer: 1, witch: 0, guard: 0, villager: 3 }
+  },
+  {
+    id: "classic",
+    name: "\u7ECF\u5178",
+    seats: 9,
+    minutes: "30 \u5206\u949F",
+    tagline: "\u5973\u5DEB\u7684\u4E00\u74F6\u89E3\u836F\u4E00\u74F6\u6BD2\u836F\uFF0C\u684C\u6E38\u5E97\u6700\u5E38\u89C1\u7684\u90A3\u4E00\u7248",
+    roster: "3 \u72FC\u4EBA \xB7 1 \u9884\u8A00\u5BB6 \xB7 1 \u5973\u5DEB \xB7 4 \u6751\u6C11",
+    roles: { wolf: 3, seer: 1, witch: 1, guard: 0, villager: 4 }
+  },
+  {
+    id: "full",
+    name: "\u5168\u89D2\u8272",
+    seats: 12,
+    minutes: "45 \u5206\u949F",
+    tagline: "\u5B88\u536B\u4E5F\u4E0A\u573A\uFF0C\u597D\u4EBA\u4E09\u4EF6\u5957\u51D1\u9F50",
+    roster: "4 \u72FC\u4EBA \xB7 1 \u9884\u8A00\u5BB6 \xB7 1 \u5973\u5DEB \xB7 1 \u5B88\u536B \xB7 5 \u6751\u6C11",
+    roles: { wolf: 4, seer: 1, witch: 1, guard: 1, villager: 5 }
+  }
+];
+var BY_ID = new Map(WOLF_VARIANTS.map((v) => [v.id, v]));
+var wolfVariant = (id) => (id ? BY_ID.get(id) : void 0) ?? WOLF_VARIANTS[1];
+var ROLE_LABEL = {
+  wolf: "\u72FC\u4EBA",
+  seer: "\u9884\u8A00\u5BB6",
+  witch: "\u5973\u5DEB",
+  guard: "\u5B88\u536B",
+  villager: "\u6751\u6C11"
+};
+var ROLE_DESC = {
+  wolf: "\u6BCF\u665A\u548C\u961F\u53CB\u4E00\u8D77\u5200\u4E00\u4E2A\u4EBA\uFF0C\u767D\u5929\u88C5\u6210\u597D\u4EBA\u6DF7\u8FC7\u53BB\u3002",
+  seer: "\u6BCF\u665A\u53EF\u4EE5\u67E5\u4E00\u4E2A\u4EBA\uFF0C\u77E5\u9053\u4ED6\u662F\u597D\u4EBA\u8FD8\u662F\u72FC\u4EBA\u3002",
+  witch: "\u4E00\u74F6\u89E3\u836F\u4E00\u74F6\u6BD2\u836F\uFF0C\u5404\u53EA\u80FD\u7528\u4E00\u6B21\uFF1B\u89E3\u836F\u80FD\u6551\u4E0B\u4ECA\u665A\u88AB\u5200\u7684\u4EBA\u3002",
+  guard: "\u6BCF\u665A\u5B88\u4E00\u4E2A\u4EBA\uFF0C\u4ED6\u4ECA\u665A\u4E0D\u4F1A\u6B7B\uFF1B\u4E0D\u80FD\u8FDE\u7740\u4E24\u665A\u5B88\u540C\u4E00\u4E2A\u4EBA\u3002",
+  villager: "\u6CA1\u6709\u6280\u80FD\uFF0C\u9760\u53D1\u8A00\u548C\u6295\u7968\u628A\u72FC\u4EBA\u627E\u51FA\u6765\u3002"
+};
+
 // src/shared/engine/util.ts
 var randInt = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
 var pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -489,7 +543,7 @@ function shuffle(arr) {
   return out;
 }
 var sittingOut = (room, p) => p.isHost && (room.hostPlays === false || room.judgeMode === "human" && room.refereeId === p.id);
-var seated = (room) => room.players.filter((p) => !sittingOut(room, p)).sort((a, b) => a.seat - b.seat);
+var seated = (room) => room.players.filter((p) => !p.watching && !sittingOut(room, p)).sort((a, b) => a.seat - b.seat);
 var alive = (room) => seated(room).filter((p) => p.alive);
 var byId = (room, id) => room.players.find((p) => p.id === id);
 var nameOf = (room, id) => id && byId(room, id)?.name || "\u67D0\u4EBA";
@@ -516,17 +570,21 @@ function retime(room, ms) {
 }
 var speakLimitMs = (room, defaultMs) => room.speakSeconds != null ? Math.max(1, room.speakSeconds) * 1e3 : defaultMs;
 function currentSpeaker(room) {
+  const active = (id) => {
+    const p = id ? byId(room, id) : void 0;
+    return p && p.alive && !p.watching ? p.id : null;
+  };
   switch (room.gameId) {
     case "spy":
-      return room.phase === "describe" ? spy(room).order.filter((id) => byId(room, id)?.alive)[room.turn] ?? null : null;
+      return room.phase === "describe" ? spy(room).order.filter((id) => byId(room, id)?.alive && !byId(room, id)?.watching)[room.turn] ?? null : null;
     case "werewolf":
-      return room.phase === "speak" ? wolf(room).order[wolf(room).cursor] ?? null : null;
+      return room.phase === "speak" ? active(wolf(room).order[wolf(room).cursor]) : null;
     case "twos":
-      return room.phase === "show" ? twos(room).order[twos(room).cursor] ?? null : null;
+      return room.phase === "show" ? active(twos(room).order[twos(room).cursor]) : null;
     case "never":
-      return room.phase === "show" ? never(room).order[never(room).cursor] ?? null : null;
+      return room.phase === "show" ? active(never(room).order[never(room).cursor]) : null;
     case "mime":
-      return room.phase === "run" ? mime(room).actorId ?? null : null;
+      return room.phase === "run" ? active(mime(room).actorId) : null;
     default:
       return null;
   }
@@ -560,6 +618,56 @@ var story = (room) => slot(room, "story");
 var never = (room) => slot(room, "never");
 var mime = (room) => slot(room, "mime");
 var wolf = (room) => slot(room, "werewolf");
+var TEAM_WIN_BONUS = 3;
+var CHAMPION_BONUS = 2;
+function settleWinBonus(room) {
+  if (room.gameId === "spy") {
+    const d = spy(room);
+    if (!d.result) return;
+    const insiderWin = d.result === "insider";
+    for (const p of seated(room)) {
+      const word = d.words[p.id];
+      if (word === void 0) continue;
+      if (word !== d.common === insiderWin) addScore(room, p.id, TEAM_WIN_BONUS);
+    }
+    ev(room, "score", `${insiderWin ? "\u5367\u5E95\u65B9" : "\u5E73\u6C11\u65B9"}\u83B7\u80DC\uFF0C\u80DC\u5229\u65B9\u6BCF\u4EBA +${TEAM_WIN_BONUS} \u5206\u3002`);
+    return;
+  }
+  if (room.gameId === "werewolf") {
+    const d = wolf(room);
+    if (!d.win) return;
+    const wolfWin = d.win === "wolf";
+    for (const p of seated(room)) {
+      if (d.roles[p.id] === "wolf" === wolfWin) addScore(room, p.id, TEAM_WIN_BONUS);
+    }
+    ev(room, "score", `${wolfWin ? "\u72FC\u4EBA" : "\u597D\u4EBA"}\u8D62\u4E0B\u8FD9\u4E00\u5C40\uFF0C\u80DC\u5229\u65B9\u6BCF\u4EBA +${TEAM_WIN_BONUS} \u5206\u3002`);
+    return;
+  }
+  const top = seated(room).slice().sort((a, b) => b.score - a.score)[0];
+  if (!top || top.score <= 0) return;
+  const champs = seated(room).filter((p) => p.score === top.score);
+  for (const p of champs) addScore(room, p.id, CHAMPION_BONUS);
+  ev(room, "score", `\u51A0\u519B ${champs.map((p) => p.name).join("\u3001")} \u5404 +${CHAMPION_BONUS} \u5206\u3002`);
+}
+function buildBoard(room) {
+  const pool = room.gameId === "spy" ? seated(room).filter((p) => !(room.judgeMode === "human" && room.refereeId === p.id)) : seated(room);
+  return rankByScore(pool).map((r) => {
+    const p = r.player;
+    let name = p.name;
+    let win = r.rank === 0 && p.score > 0;
+    if (room.gameId === "spy") {
+      const d = spy(room);
+      const word = d.words[p.id];
+      if (d.result && word !== void 0) win = word !== d.common === (d.result === "insider");
+    } else if (room.gameId === "werewolf") {
+      const d = wolf(room);
+      const role = d.roles[p.id] ?? "villager";
+      name = `${p.name} \xB7 ${ROLE_LABEL[role]}`;
+      if (d.win) win = role === "wolf" === (d.win === "wolf");
+    }
+    return { rank: r.rank + 1, name, score: p.score, win };
+  });
+}
 function grams(text) {
   const clean = (text || "").replace(/\s+/g, "");
   const out = /* @__PURE__ */ new Set();
@@ -583,6 +691,7 @@ var sanitize = (s, max = 200) => String(s ?? "").replace(/\r?\n/g, " ").trim().s
 
 // src/shared/engine/bomb.ts
 var HUNT_MS = 15e3;
+var huntMs = (room) => speakLimitMs(room, HUNT_MS);
 var MAX_ROUND = 3;
 var MIN_VALUE = 1;
 var MAX_VALUE = 100;
@@ -627,21 +736,25 @@ function newRound(room) {
   d.order = shuffle(seated(room).map((p) => p.id));
   d.cursor = 0;
   d.loser = null;
-  phase(room, "hunt", { ms: HUNT_MS, round: d.round });
+  phase(room, "hunt", { ms: huntMs(room), round: d.round });
   ev(
     room,
     "judge",
-    `\u7B2C ${d.round} \u9897\u96F7\u5DF2\u7ECF\u57CB\u8FDB ${MIN_VALUE} \u5230 ${MAX_VALUE} \u4E4B\u95F4\uFF0C\u5168\u573A\u6CA1\u4EBA\u77E5\u9053\u662F\u54EA\u4E2A\u3002\u5148\u4ECE ${currentName(room, d)} \u5F00\u59CB\uFF0C15 \u79D2\u4E00\u4E2A\u3002`
+    `\u7B2C ${d.round} \u9897\u96F7\u5DF2\u7ECF\u57CB\u8FDB ${MIN_VALUE} \u5230 ${MAX_VALUE} \u4E4B\u95F4\uFF0C\u5168\u573A\u6CA1\u4EBA\u77E5\u9053\u662F\u54EA\u4E2A\u3002\u5148\u4ECE ${currentName(room, d)} \u5F00\u59CB\uFF0C${Math.round(huntMs(room) / 1e3)} \u79D2\u4E00\u4E2A\u3002`
   );
 }
 function advance(room) {
   const d = bomb(room);
   if (d.order.length === 0) {
-    retime(room, HUNT_MS);
+    retime(room, huntMs(room));
     return;
   }
-  d.cursor = (d.cursor + 1) % d.order.length;
-  retime(room, HUNT_MS);
+  for (let i = 0; i < d.order.length; i++) {
+    d.cursor = (d.cursor + 1) % d.order.length;
+    const p = byId(room, d.order[d.cursor]);
+    if (p && !p.watching) break;
+  }
+  retime(room, huntMs(room));
 }
 function awardSafe(room) {
   const d = bomb(room);
@@ -759,8 +872,7 @@ var bombEngine = {
       }
       if (value < d.target) d.low = Math.max(d.low, value + 1);
       else d.high = Math.min(d.high, value - 1);
-      d.cursor = d.order.length ? (d.cursor + 1) % d.order.length : 0;
-      retime(room, HUNT_MS);
+      advance(room);
       const width = widthOf(d);
       const pressure = pick(width <= 2 ? PRESS_DEADLY : width <= 5 ? PRESS_TIGHT : PRESS_NORMAL);
       ev(
@@ -797,8 +909,11 @@ var bombEngine = {
     if (room.phase !== "hunt") return;
     const d = bomb(room);
     const cur = byId(room, currentId(d) ?? "");
-    if (!cur) {
-      if (!d.order.some((id) => byId(room, id))) return;
+    if (!cur || cur.watching) {
+      if (!d.order.some((id) => {
+        const p = byId(room, id);
+        return p && !p.watching;
+      })) return;
       advance(room);
       ev(room, "info", "\u8FD9\u4F4D\u4E0D\u5728\u73B0\u573A\uFF0C\u5148\u8DF3\u8FC7\uFF0C\u7EE7\u7EED\u62A5\u6570\u3002");
       return;
@@ -2361,8 +2476,8 @@ function stepCircle(room, d) {
   const nx = nextId ? byId(room, nextId) : null;
   ev(room, "info", `\u8F6E\u5230 ${nx ? clip(nx.name, 12) : "\u4E0B\u4E00\u4F4D"}\uFF0C\u6570\u5B57 ${d.count}\u3002`);
 }
-function tighten(d) {
-  d.speedMs = Math.max(MIN_MS, START_MS - Math.floor(d.count / 5) * 200);
+function tighten(room, d) {
+  d.speedMs = Math.max(MIN_MS, speakLimitMs(room, START_MS) - Math.floor(d.count / 5) * 200);
 }
 function applyMiss(room, d, id, kind, how) {
   const name = nameOf(room, id);
@@ -2396,7 +2511,7 @@ function startSeven(room) {
   d.mistakes = {};
   d.struck = [];
   d.lastCall = null;
-  d.speedMs = START_MS;
+  d.speedMs = speakLimitMs(room, START_MS);
   phase(room, "run", { ms: d.speedMs });
   const first = byId(room, d.order[0]);
   ev(
@@ -2416,7 +2531,7 @@ var sevenEngine = {
     d.mistakes = {};
     d.struck = [];
     d.lastCall = null;
-    d.speedMs = START_MS;
+    d.speedMs = speakLimitMs(room, START_MS);
     phase(room, "lobby");
   },
   start(room) {
@@ -2433,7 +2548,7 @@ var sevenEngine = {
       if (kind === "pass" === isSevenish(d.count)) {
         d.lastCall = { by: actor.id, expect: d.count, kind, correct: true };
         d.count += 1;
-        tighten(d);
+        tighten(room, d);
         stepCircle(room, d);
       } else {
         applyMiss(room, d, actor.id, kind, "wrong");
@@ -2459,7 +2574,7 @@ var sevenEngine = {
       const cur = currentId2(room, d);
       ev(room, "judge", `\u88C1\u5224\u653E\u8FC7 ${cur ? nameOf(room, cur) : "\u8FD9\u4E00\u4F4D"} \u7684\u300C\u6570\u5B57 ${d.count}\u300D\uFF0C\u8FD9\u4E00\u4E0B\u4E0D\u8BB0\u5931\u8BEF\u3002`);
       d.count += 1;
-      tighten(d);
+      tighten(room, d);
       stepCircle(room, d);
       return;
     }
@@ -2470,7 +2585,7 @@ var sevenEngine = {
     const d = seven(room);
     const cur = currentId2(room, d);
     if (!cur) {
-      enterOver(room, d);
+      stepCircle(room, d);
       return;
     }
     applyMiss(room, d, cur, "say", "timeout");
@@ -2970,6 +3085,8 @@ var DESC_MS = 4e4;
 var VOTE_MS = 3e4;
 var MAX_ROUND2 = 6;
 var maxInsiders = (n) => Math.max(1, n - 2);
+var autoInsiders = (n) => n >= 8 ? 2 : 1;
+var effectiveInsiders = (n, pref) => Math.max(1, Math.min(pref ?? autoInsiders(n), maxInsiders(n)));
 function defaultDescribeMode(p) {
   if (!p.phonePerPerson) return "oral";
   return p.shyLevel === 2 ? "typed" : "oral";
@@ -2995,9 +3112,6 @@ function inGame(room) {
 }
 function seatedInGame(room) {
   return seated(room).filter((p) => !isJudge(room, p.id));
-}
-function plannedInsiderCount(n) {
-  return Math.max(1, Math.min(n >= 8 ? 2 : 1, n - 2));
 }
 function startDescribe(room) {
   const d = spy(room);
@@ -3136,7 +3250,7 @@ var spyEngine = {
   start(room) {
     const d = spy(room);
     const order = seatedInGame(room);
-    d.insiderCount = plannedInsiderCount(order.length);
+    d.insiderCount = effectiveInsiders(order.length, d.insiderPref);
     const insiderSeats = shuffle(order.map((p) => p.id)).slice(0, d.insiderCount);
     for (const p of order) {
       d.words[p.id] = insiderSeats.includes(p.id) ? d.insider : d.common;
@@ -3149,7 +3263,8 @@ var spyEngine = {
     const d = spy(room);
     if (action === "describe") {
       if (room.phase !== "describe") return;
-      const currentId3 = d.order[room.turn];
+      const livingOrder = d.order.filter((id) => byId(room, id)?.alive && !byId(room, id)?.watching);
+      const currentId3 = livingOrder[room.turn];
       if (actor.id !== currentId3 || d.descriptions[actor.id] !== void 0) return;
       if (d.describeMode === "oral") {
         d.descriptions[actor.id] = "\uFF08\u5DF2\u5F00\u53E3\uFF09";
@@ -3164,14 +3279,14 @@ var spyEngine = {
         d.descriptions[actor.id] = text;
       }
       const nextTurn = room.turn + 1;
-      const livingOrder = d.order.filter((id) => byId(room, id)?.alive);
-      if (nextTurn >= livingOrder.length) {
+      const aliveOrder = d.order.filter((id) => byId(room, id)?.alive && !byId(room, id)?.watching);
+      if (nextTurn >= aliveOrder.length) {
         ev(room, "judge", "\u63CF\u8FF0\u5B8C\u6BD5\uFF0C\u5F00\u59CB\u6295\u7968\u3002\u6BCF\u4EBA\u6295\u4E00\u4E2A\u4F60\u89C9\u5F97\u6700\u4E0D\u50CF\u540C\u7C7B\u7684\u4EBA\u3002");
         phase(room, "vote", { ms: VOTE_MS });
       } else {
         room.turn = nextTurn;
         phase(room, "describe", { ms: speakLimitMs(room, DESC_MS), turn: nextTurn });
-        const nx = byId(room, d.order[nextTurn]);
+        const nx = byId(room, aliveOrder[nextTurn]);
         ev(room, "info", `\u8F6E\u5230 ${nx?.name ?? "?"}\u3002`);
       }
       return;
@@ -3279,7 +3394,12 @@ var spyEngine = {
         common: show ? d.common : "",
         insider: show ? d.insider : "",
         // lobby 里人数还在涨，展示按当前人数算出来的计划值
-        insiderCount: room.phase === "lobby" ? plannedInsiderCount(inGame(room).length) : d.insiderCount,
+        insiderCount: room.phase === "lobby" ? effectiveInsiders(inGame(room).length, d.insiderPref) : d.insiderCount,
+        insiderPref: d.insiderPref,
+        insiderMax: maxInsiders(seatedCount),
+        insiderAuto: autoInsiders(seatedCount),
+        seatedCount,
+        describeMode: d.describeMode,
         round: d.round,
         maxRound: MAX_ROUND2,
         runoff: d.runoff ?? [],
@@ -3348,7 +3468,7 @@ var spyEngine = {
       };
     }
     if (room.phase === "describe") {
-      const currentId3 = d.order[room.turn];
+      const currentId3 = d.order.filter((id) => byId(room, id)?.alive && !byId(room, id)?.watching)[room.turn];
       const mine = currentId3 === me.id;
       const done = d.descriptions[me.id] !== void 0;
       const oral = d.describeMode === "oral";
@@ -4188,53 +4308,6 @@ function hostHintFor6(room) {
   }
 }
 
-// src/shared/werewolf.ts
-var WOLF_VARIANTS = [
-  {
-    id: "quick",
-    name: "\u901F\u6218",
-    seats: 6,
-    minutes: "15 \u5206\u949F",
-    tagline: "\u4E24\u72FC\u4E00\u9884\u8A00\u5BB6\uFF0C\u6CA1\u6709\u836F\uFF0C\u5168\u9760\u5634\u786C",
-    roster: "2 \u72FC\u4EBA \xB7 1 \u9884\u8A00\u5BB6 \xB7 3 \u6751\u6C11",
-    roles: { wolf: 2, seer: 1, witch: 0, guard: 0, villager: 3 }
-  },
-  {
-    id: "classic",
-    name: "\u7ECF\u5178",
-    seats: 9,
-    minutes: "30 \u5206\u949F",
-    tagline: "\u5973\u5DEB\u7684\u4E00\u74F6\u89E3\u836F\u4E00\u74F6\u6BD2\u836F\uFF0C\u684C\u6E38\u5E97\u6700\u5E38\u89C1\u7684\u90A3\u4E00\u7248",
-    roster: "3 \u72FC\u4EBA \xB7 1 \u9884\u8A00\u5BB6 \xB7 1 \u5973\u5DEB \xB7 4 \u6751\u6C11",
-    roles: { wolf: 3, seer: 1, witch: 1, guard: 0, villager: 4 }
-  },
-  {
-    id: "full",
-    name: "\u5168\u89D2\u8272",
-    seats: 12,
-    minutes: "45 \u5206\u949F",
-    tagline: "\u5B88\u536B\u4E5F\u4E0A\u573A\uFF0C\u597D\u4EBA\u4E09\u4EF6\u5957\u51D1\u9F50",
-    roster: "4 \u72FC\u4EBA \xB7 1 \u9884\u8A00\u5BB6 \xB7 1 \u5973\u5DEB \xB7 1 \u5B88\u536B \xB7 5 \u6751\u6C11",
-    roles: { wolf: 4, seer: 1, witch: 1, guard: 1, villager: 5 }
-  }
-];
-var BY_ID = new Map(WOLF_VARIANTS.map((v) => [v.id, v]));
-var wolfVariant = (id) => (id ? BY_ID.get(id) : void 0) ?? WOLF_VARIANTS[1];
-var ROLE_LABEL = {
-  wolf: "\u72FC\u4EBA",
-  seer: "\u9884\u8A00\u5BB6",
-  witch: "\u5973\u5DEB",
-  guard: "\u5B88\u536B",
-  villager: "\u6751\u6C11"
-};
-var ROLE_DESC = {
-  wolf: "\u6BCF\u665A\u548C\u961F\u53CB\u4E00\u8D77\u5200\u4E00\u4E2A\u4EBA\uFF0C\u767D\u5929\u88C5\u6210\u597D\u4EBA\u6DF7\u8FC7\u53BB\u3002",
-  seer: "\u6BCF\u665A\u53EF\u4EE5\u67E5\u4E00\u4E2A\u4EBA\uFF0C\u77E5\u9053\u4ED6\u662F\u597D\u4EBA\u8FD8\u662F\u72FC\u4EBA\u3002",
-  witch: "\u4E00\u74F6\u89E3\u836F\u4E00\u74F6\u6BD2\u836F\uFF0C\u5404\u53EA\u80FD\u7528\u4E00\u6B21\uFF1B\u89E3\u836F\u80FD\u6551\u4E0B\u4ECA\u665A\u88AB\u5200\u7684\u4EBA\u3002",
-  guard: "\u6BCF\u665A\u5B88\u4E00\u4E2A\u4EBA\uFF0C\u4ED6\u4ECA\u665A\u4E0D\u4F1A\u6B7B\uFF1B\u4E0D\u80FD\u8FDE\u7740\u4E24\u665A\u5B88\u540C\u4E00\u4E2A\u4EBA\u3002",
-  villager: "\u6CA1\u6709\u6280\u80FD\uFF0C\u9760\u53D1\u8A00\u548C\u6295\u7968\u628A\u72FC\u4EBA\u627E\u51FA\u6765\u3002"
-};
-
 // src/shared/engine/werewolf.ts
 var NIGHT_MS = 75e3;
 var SPEAK_MS = 45e3;
@@ -4915,6 +4988,7 @@ function memoryStore() {
       return { room: JSON.parse(json2), json: json2, expectedSeq: room.seq };
     },
     async insert(room) {
+      if (rooms.has(room.code)) return false;
       rooms.set(room.code, room);
       return true;
     },
@@ -5023,6 +5097,12 @@ var makeToken = () => randomPick(TOKEN_CHARS, 32);
 function normalize(code) {
   return String(code ?? "").trim().toUpperCase().slice(0, ROOM_CODE_LENGTH);
 }
+var findPlayer = (room, token) => token ? room.players.find((p) => (p.claimToken ?? p.id) === token) ?? null : null;
+var findSpectator = (room, token) => token ? (room.spectators ?? []).find((s) => s.id === token) ?? null : null;
+var cleanAvatarInput = (v) => {
+  if (typeof v !== "string") return void 0;
+  return isPhotoAvatar(v) ? v : String(v).slice(0, 24);
+};
 function sanitizeName(name) {
   return String(name ?? "").replace(/\s+/g, " ").trim().slice(0, 12);
 }
@@ -5049,6 +5129,7 @@ function advance2(room, now) {
   }
   if (room.phase === "over" && !room.finished) {
     try {
+      settleWinBonus(room);
       room.finished = engine.finish(room);
     } catch (err) {
       console.error("[finish]", room.code, err);
@@ -5059,6 +5140,7 @@ function advance2(room, now) {
         verdict: "\u7ED3\u7B97\u65F6\u88C1\u5224\u6253\u4E86\u4E2A\u76F9\uFF0C\u5206\u6570\u4EE5\u73B0\u573A\u8BB0\u5FC6\u4E3A\u51C6\u3002"
       };
     }
+    room.finished.board = buildBoard(room);
   }
   syncSpeakTimer(room, now);
 }
@@ -5104,6 +5186,8 @@ async function createRoom(input) {
     speakingId: null,
     turnStartedAt: null,
     players: [host],
+    spectators: [],
+    kickedIds: [],
     data: {},
     events: [],
     chat: [],
@@ -5126,10 +5210,11 @@ async function joinRoom(code, name, avatar) {
     let finalName = clean;
     let n = 2;
     while (taken.has(finalName)) finalName = `${clean}${n++}`;
+    const seat = room.players.reduce((m, p) => Math.max(m, p.seat), 0) + 1;
     const player = {
       id: makeToken(),
       name: finalName,
-      seat: room.players.length + 1,
+      seat,
       isHost: false,
       connected: true,
       lastSeen: Date.now(),
@@ -5137,7 +5222,7 @@ async function joinRoom(code, name, avatar) {
       score: 0,
       alive: true,
       outReason: null,
-      avatar: sanitizeAvatar(avatar, room.players.length + 1),
+      avatar: sanitizeAvatar(avatar, seat),
       speakMs: 0
     };
     room.players.push(player);
@@ -5157,13 +5242,61 @@ function touch(room) {
   room.updatedAt = Date.now();
   if (room.events.length > 60) room.events.splice(0, room.events.length - 60);
 }
+function resetToLobby(room) {
+  room.phase = "lobby";
+  room.round = 0;
+  room.turn = 0;
+  room.startedAt = null;
+  room.deadlineAt = null;
+  room.pausedMs = 0;
+  room.speakingId = null;
+  room.turnStartedAt = null;
+  room.finished = null;
+  room.data = {};
+  for (const p of room.players) {
+    p.score = 0;
+    p.alive = true;
+    p.outReason = null;
+    p.speakMs = 0;
+  }
+}
+function switchGame(room, hostToken, gameId) {
+  const host = findPlayer(room, hostToken);
+  if (!host?.isHost) return "\u53EA\u6709\u623F\u4E3B\u80FD\u6362\u6E38\u620F";
+  if (room.phase !== "lobby") return "\u5F00\u5C40\u4E4B\u540E\u4E0D\u80FD\u6362\u6E38\u620F";
+  const meta = GAME_BY_ID[gameId];
+  const engine = engineFor(gameId);
+  if (!meta || !engine) return "\u6CA1\u6709\u8FD9\u4E2A\u6E38\u620F";
+  if (gameId === room.gameId) return null;
+  if (room.players.length > meta.maxPlayers) {
+    return `${meta.name} \u6700\u591A ${meta.maxPlayers} \u4EBA\uFF0C\u73B0\u5728 ${room.players.length} \u4EBA\uFF0C\u5148\u8BF7\u51E0\u4F4D\u53BB\u89C2\u6218\u5E2D`;
+  }
+  room.gameId = gameId;
+  room.variant = "";
+  if (!meta.judgeModes.includes(room.judgeMode)) room.judgeMode = meta.judgeModes[0];
+  if (room.judgeMode === "ai") room.refereeId = null;
+  resetToLobby(room);
+  engine.create(room);
+  ev(room, "info", `\u623F\u4E3B\u628A\u6E38\u620F\u6362\u6210\u4E86\u300C${meta.name}\u300D\uFF0C\u5927\u5BB6\u91CD\u65B0\u51C6\u5907`);
+  touch(room);
+  return null;
+}
 function configureRoom(room, opts) {
+  if (opts.gameId !== void 0) {
+    const err = switchGame(room, opts.hostToken ?? "", opts.gameId);
+    if (err) return err;
+  }
   const meta = GAME_BY_ID[room.gameId];
   if (opts.variant !== void 0) {
     if (room.phase !== "lobby") return "\u5F00\u5C40\u4E4B\u540E\u4E0D\u80FD\u6362\u6A21\u5F0F\u4E86";
     room.variant = String(opts.variant || "");
   }
+  if (opts.hostPlays !== void 0) {
+    if (room.phase !== "lobby") return "\u5F00\u5C40\u4E4B\u540E\u4E0D\u80FD\u6539\u623F\u4E3B\u8EAB\u4EFD\u4E86";
+    room.hostPlays = !!opts.hostPlays;
+  }
   if (opts.speakSeconds !== void 0) {
+    if (room.phase !== "lobby") return "\u8F6E\u6B21\u65F6\u95F4\u5F00\u5C40\u540E\u5C31\u9501\u5B9A\u4E86\uFF0C\u56DE\u5927\u5385\u518D\u8C03";
     if (opts.speakSeconds === null) {
       room.speakSeconds = null;
     } else {
@@ -5200,7 +5333,9 @@ function configureRoom(room, opts) {
   return null;
 }
 function startRoom(room, hostToken) {
-  if (!room.players.some((p) => p.id === hostToken && p.isHost)) return "\u53EA\u6709\u623F\u4E3B\u80FD\u5F00\u59CB\u8FD9\u5C40";
+  if (room.phase !== "lobby") return "\u8FD9\u5C40\u5DF2\u7ECF\u5F00\u59CB\u4E86";
+  const host = findPlayer(room, hostToken);
+  if (!host?.isHost) return "\u53EA\u6709\u623F\u4E3B\u80FD\u5F00\u59CB\u8FD9\u5C40";
   const meta = GAME_BY_ID[room.gameId];
   if (seated(room).length < meta.minPlayers) return `\u81F3\u5C11 ${meta.minPlayers} \u4E2A\u4EBA\u624D\u80FD\u5F00\u8FD9\u5C40`;
   if (room.judgeMode === "human" && !room.refereeId) return "\u8BF7\u5148\u6307\u5B9A\u4E00\u540D\u771F\u4EBA\u88C1\u5224";
@@ -5209,6 +5344,87 @@ function startRoom(room, hostToken) {
   room.startedAt = Date.now();
   room.seq += 1;
   engine.start(room);
+  touch(room);
+  return null;
+}
+function reviveSeat(room, p) {
+  p.watching = false;
+  p.alive = true;
+  p.outReason = null;
+  p.connected = true;
+  p.lastSeen = Date.now();
+  const sp = room.data.spy;
+  if (sp) sp.eliminated = sp.eliminated.filter((id) => id !== p.id);
+  const wf = room.data.werewolf;
+  if (wf) {
+    wf.dead = wf.dead.filter((id) => id !== p.id);
+    delete wf.deadRoles[p.id];
+  }
+  const sv = room.data.seven;
+  if (sv) sv.struck = sv.struck.filter((id) => id !== p.id);
+}
+function spectate(room, actor) {
+  if (actor.isHost) return "\u623F\u4E3B\u4E0D\u80FD\u9000\u5230\u89C2\u6218\u5E2D\uFF0C\u53EF\u4EE5\u7528\u300C\u89E3\u6563\u623F\u95F4\u300D\u6216\u5148\u63D0\u524D\u7ED3\u675F";
+  if (room.judgeMode === "human" && room.refereeId === actor.id) return "\u88C1\u5224\u4E0D\u80FD\u9000\u5230\u89C2\u6218\u5E2D\uFF0C\u5148\u8BA9\u623F\u4E3B\u6362\u4E00\u540D\u88C1\u5224";
+  if (actor.watching) return null;
+  actor.watching = true;
+  actor.alive = false;
+  actor.outReason = "\u9000\u51FA\u89C2\u6218";
+  actor.micOn = false;
+  if (room.voice?.length) room.voice = room.voice.filter((s) => s.from !== actor.id && s.to !== actor.id);
+  ev(room, "info", `${actor.name} \u9000\u5230\u89C2\u6218\u5E2D\uFF0C${actor.seat} \u53F7\u4F4D\u7A7A\u51FA\u6765\u4E86\uFF0C\u89C2\u6218\u7684\u4EBA\u53EF\u4EE5\u63A5\u66FF`);
+  touch(room);
+  return null;
+}
+function takeover(room, spec, targetId) {
+  if (room.phase === "lobby") return "\u5927\u5385\u91CC\u76F4\u63A5\u70B9\u300C\u52A0\u5165\u5BF9\u5C40\u300D\u5C31\u884C";
+  if (room.phase === "over") return "\u8FD9\u5C40\u5DF2\u7ECF\u7ED3\u675F\uFF0C\u7B49\u623F\u4E3B\u56DE\u5927\u5385\u518D\u52A0\u5165";
+  const vacancies = room.players.filter((p) => p.watching);
+  const seat = targetId ? vacancies.find((p) => p.id === targetId) : vacancies[0];
+  if (!seat) return "\u73B0\u5728\u6CA1\u6709\u53EF\u63A5\u66FF\u7684\u7A7A\u4F4D";
+  const oldName = seat.name;
+  const oldToken = seat.id;
+  room.spectators = (room.spectators ?? []).filter((s) => s.id !== spec.id);
+  const specs = room.spectators ?? (room.spectators = []);
+  specs.push({ id: oldToken, name: oldName, avatar: sanitizeAvatar(seat.avatar, seat.seat), lastSeen: Date.now() });
+  const taken = new Set(room.players.filter((p) => p.id !== seat.id).map((p) => p.name));
+  let finalName = spec.name;
+  let n = 2;
+  while (taken.has(finalName)) finalName = `${spec.name}${n++}`;
+  seat.claimToken = spec.id;
+  seat.name = finalName;
+  seat.avatar = sanitizeAvatar(spec.avatar, seat.seat);
+  seat.micOn = false;
+  reviveSeat(room, seat);
+  ev(room, "join", `${finalName} \u63A5\u66FF\u4E86 ${oldName} \u7684 ${seat.seat} \u53F7\u4F4D\uFF0C\u7EE7\u7EED\u8FD9\u5C40`);
+  touch(room);
+  return null;
+}
+function joinPlay(room, spec) {
+  if (room.phase !== "lobby") return "\u5DF2\u7ECF\u5F00\u5C40\u4E86\uFF0C\u53EA\u80FD\u63A5\u66FF\u7A7A\u4F4D";
+  const meta = GAME_BY_ID[room.gameId];
+  if (meta && room.players.length >= meta.maxPlayers) return `\u623F\u95F4\u6EE1\u4E86\uFF08\u6700\u591A ${meta.maxPlayers} \u4EBA\uFF09`;
+  room.spectators = (room.spectators ?? []).filter((s) => s.id !== spec.id);
+  const seat = room.players.reduce((m, p) => Math.max(m, p.seat), 0) + 1;
+  const taken = new Set(room.players.map((p) => p.name));
+  let finalName = spec.name;
+  let n = 2;
+  while (taken.has(finalName)) finalName = `${spec.name}${n++}`;
+  room.players.push({
+    id: spec.id,
+    name: finalName,
+    seat,
+    isHost: false,
+    connected: true,
+    lastSeen: Date.now(),
+    lastChatAt: 0,
+    score: 0,
+    alive: true,
+    outReason: null,
+    avatar: sanitizeAvatar(spec.avatar, seat),
+    speakMs: 0
+  });
+  ev(room, "join", `${finalName} \u4ECE\u89C2\u6218\u5E2D\u52A0\u5165\u5BF9\u5C40\uFF0C\u73B0\u5728 ${room.players.length} \u4E2A\u4EBA`);
   touch(room);
   return null;
 }
@@ -5224,11 +5440,13 @@ function sendChat(room, actor, payload) {
     }
   }
   room.seq += 1;
+  const seat = "seat" in actor ? actor.seat : 1;
   chat.push({
     id: room.seq,
     by: actor.id,
     name: actor.name,
-    avatar: sanitizeAvatar(actor.avatar, actor.seat),
+    // 照片头像不内嵌进每条消息（会把房间存储撑爆），下发视图时按当前头像解析
+    avatar: isPhotoAvatar(actor.avatar) ? "" : sanitizeAvatar(actor.avatar, seat),
     text,
     at: now
   });
@@ -5247,17 +5465,41 @@ function say(room, actor, payload) {
 }
 function act(room, token, action, payload) {
   const engine = engineFor(room.gameId);
-  const actor = room.players.find((p) => p.id === token);
-  if (!engine || !actor) return "\u8EAB\u4EFD\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u52A0\u5165\u623F\u95F4";
+  if (!engine) return "\u6E38\u620F\u5F15\u64CE\u7F3A\u5931";
+  if (room.kickedIds?.includes(token)) return "\u4F60\u5DF2\u88AB\u623F\u4E3B\u79FB\u51FA\u623F\u95F4";
+  const actor = findPlayer(room, token);
+  const spec = actor ? null : findSpectator(room, token);
+  if (!actor && !spec) return "\u8EAB\u4EFD\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u52A0\u5165\u623F\u95F4";
   if (!/^[a-zA-Z][a-zA-Z0-9]{1,24}$/.test(action)) return "\u672A\u77E5\u64CD\u4F5C";
-  if (action === "chat") return sendChat(room, actor, payload);
+  if (action === "chat") {
+    return sendChat(room, actor ?? spec, payload);
+  }
   if (action === "avatar") {
-    actor.avatar = sanitizeAvatar(payload?.avatar, actor.seat);
+    const target = actor ?? spec;
+    target.avatar = sanitizeAvatar(payload?.avatar, actor?.seat ?? 1);
     touch(room);
     return null;
   }
+  if (action === "spectate") return actor ? spectate(room, actor) : "\u4F60\u5DF2\u7ECF\u5728\u89C2\u6218\u5E2D\u4E86";
+  if (action === "rejoin") {
+    if (!actor?.watching) return "\u4F60\u7684\u5EA7\u4F4D\u8FD8\u5728\uFF0C\u4E0D\u7528\u56DE\u5F52";
+    reviveSeat(room, actor);
+    ev(room, "join", `${actor.name} \u56DE\u5230\u4E86\u81EA\u5DF1\u7684 ${actor.seat} \u53F7\u4F4D`);
+    touch(room);
+    return null;
+  }
+  if (action === "takeover") {
+    if (!spec) return actor?.watching ? "\u70B9\u300C\u56DE\u5230\u6211\u7684\u5EA7\u4F4D\u300D\u5C31\u80FD\u5F52\u961F" : "\u4F60\u5DF2\u7ECF\u5728\u5BF9\u5C40\u91CC\u4E86";
+    return takeover(room, spec, typeof payload?.target === "string" ? payload.target : void 0);
+  }
+  if (action === "joinplay") {
+    if (!spec) return "\u4F60\u5DF2\u7ECF\u5728\u5BF9\u5C40\u91CC\u4E86";
+    return joinPlay(room, spec);
+  }
+  if (!actor) return "\u89C2\u6218\u5E2D\u53EA\u80FD\u770B\u548C\u804A\u5929\uFF0C\u60F3\u73A9\u5C31\u52A0\u5165\u6216\u63A5\u66FF\u7A7A\u4F4D";
   if (action === "say") return say(room, actor, payload);
   if (action === "mic") {
+    if (actor.watching) return "\u89C2\u6218\u4E2D\u4E0D\u80FD\u5F00\u9EA6";
     actor.micOn = !!payload?.on;
     if (!actor.micOn && room.voice?.length) {
       room.voice = room.voice.filter((s) => s.from !== actor.id && s.to !== actor.id);
@@ -5265,6 +5507,7 @@ function act(room, token, action, payload) {
     touch(room);
     return null;
   }
+  if (actor.watching) return "\u4F60\u5728\u89C2\u6218\u5E2D\uFF0C\u5148\u56DE\u5230\u5EA7\u4F4D\u518D\u64CD\u4F5C";
   engine.act(room, actor, action, payload ?? {});
   touch(room);
   syncSpeakTimer(room, Date.now());
@@ -5273,16 +5516,29 @@ function act(room, token, action, payload) {
 function nextStep(room, token) {
   const engine = engineFor(room.gameId);
   if (!engine) return "\u6E38\u620F\u5F15\u64CE\u7F3A\u5931";
-  const actor = token ? room.players.find((p) => p.id === token) ?? null : null;
+  const actor = findPlayer(room, token);
   if (token && !actor) return "\u8EAB\u4EFD\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u52A0\u5165\u623F\u95F4";
+  if (actor?.watching) return "\u4F60\u5728\u89C2\u6218\u5E2D\uFF0C\u4E0D\u80FD\u63A8\u8FDB\u6E38\u620F";
   if (room.phase === "lobby") {
     const err = startRoom(room, actor?.id ?? "");
     syncSpeakTimer(room, Date.now());
     return err;
   }
+  if (!isRefereeAct(room, actor)) return "\u53EA\u6709\u623F\u4E3B\u6216\u88C1\u5224\u80FD\u63A8\u8FDB\u4E0B\u4E00\u6B65";
   engine.next(room, actor);
   touch(room);
   syncSpeakTimer(room, Date.now());
+  return null;
+}
+function forceEnd(room, token) {
+  const actor = findPlayer(room, token);
+  if (token && !actor) return "\u8EAB\u4EFD\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u52A0\u5165\u623F\u95F4";
+  if (!isRefereeAct(room, actor)) return "\u53EA\u6709\u623F\u4E3B\u6216\u88C1\u5224\u80FD\u7ED3\u675F\u672C\u5C40";
+  if (room.phase === "lobby") return "\u8FD8\u6CA1\u5F00\u5C40\uFF0C\u6CA1\u6709\u4EC0\u4E48\u53EF\u7ED3\u675F\u7684";
+  if (room.phase === "over") return null;
+  phase(room, "over");
+  ev(room, "judge", "\u623F\u4E3B\u63D0\u524D\u7ED3\u675F\u4E86\u8FD9\u4E00\u5C40\uFF0C\u76F4\u63A5\u7ED3\u7B97\u3002");
+  touch(room);
   return null;
 }
 function isRefereeViewer(room, me) {
@@ -5295,13 +5551,41 @@ function buildView(room, token, asWatcher = false) {
   const engine = engineFor(room.gameId);
   if (!meta || !engine) return null;
   const now = Date.now();
-  const me = token ? room.players.find((p) => p.id === token) ?? null : null;
-  const role = asWatcher || !me ? "watcher" : me.isHost ? "host" : room.judgeMode === "human" && room.refereeId === me.id ? "referee" : "player";
-  const players = room.players.map((p) => ({
+  const me = findPlayer(room, token);
+  const spec = me ? null : findSpectator(room, token);
+  const watching = !!me?.watching;
+  const role = !me || watching ? "watcher" : me.isHost ? "host" : room.judgeMode === "human" && room.refereeId === me.id ? "referee" : "player";
+  const players = room.players.filter((p) => !p.watching).map((p) => ({
     ...p,
     connected: now - p.lastSeen < PLAYER_OFFLINE_MS
   }));
+  const spectators = [
+    ...room.players.filter((p) => p.watching).map((p) => ({
+      id: p.id,
+      name: p.name,
+      avatar: sanitizeAvatar(p.avatar, p.seat),
+      connected: now - p.lastSeen < PLAYER_OFFLINE_MS,
+      seat: p.seat
+    })),
+    ...(room.spectators ?? []).map((s) => ({
+      id: s.id,
+      name: s.name,
+      avatar: sanitizeAvatar(s.avatar, 1),
+      connected: now - s.lastSeen < PLAYER_OFFLINE_MS,
+      seat: null
+    }))
+  ];
+  const watchMe = watching ? { id: me.id, name: me.name, avatar: sanitizeAvatar(me.avatar, me.seat), seat: me.seat } : spec ? { id: spec.id, name: spec.name, avatar: sanitizeAvatar(spec.avatar, 1), seat: null } : null;
   const spectatingHost = !!me?.isHost && (room.hostPlays === false || room.judgeMode === "human" && room.refereeId === me.id);
+  const chat = (room.chat ?? []).slice(-CHAT_VIEW).map((c) => {
+    const author = room.players.find((p) => p.id === c.by);
+    const s = author ? null : (room.spectators ?? []).find((x) => x.id === c.by);
+    return {
+      ...c,
+      name: author?.name ?? s?.name ?? c.name,
+      avatar: sanitizeAvatar(author?.avatar ?? s?.avatar ?? c.avatar, author?.seat ?? 1)
+    };
+  });
   const view = {
     code: room.code,
     seq: room.seq,
@@ -5319,14 +5603,17 @@ function buildView(room, token, asWatcher = false) {
     refereeId: room.refereeId,
     hostPlays: room.hostPlays,
     role,
-    me: me ? players.find((p) => p.id === me.id) ?? null : null,
+    me: me && !watching ? players.find((p) => p.id === me.id) ?? null : null,
     players,
+    spectators,
+    watchMe,
+    myToken: token,
     events: room.events.slice(-14),
-    chat: (room.chat ?? []).slice(-CHAT_VIEW),
+    chat,
     finished: room.finished,
     publicData: engine.publicData(room),
-    secret: me && !asWatcher && !spectatingHost ? engine.secretFor(room, me) : {},
-    referee: isRefereeViewer(room, me) ? engine.refereeExtra(room) : null,
+    secret: me && !watching && !asWatcher && !spectatingHost ? engine.secretFor(room, me) : {},
+    referee: !watching && isRefereeViewer(room, me) ? engine.refereeExtra(room) : null,
     needs: { prompt: null, input: "none", inputHint: "", submitted: false, hostHint: "" }
   };
   view.needs = engine.needs(room, role === "watcher" || spectatingHost ? null : me, view);
@@ -5334,9 +5621,13 @@ function buildView(room, token, asWatcher = false) {
 }
 function markSeen(room, token, now = Date.now()) {
   if (!token) return;
-  const p = room.players.find((x) => x.id === token);
-  if (!p || now - p.lastSeen < PRESENCE_WRITE_MS) return;
-  p.lastSeen = now;
+  const p = findPlayer(room, token);
+  if (p) {
+    if (now - p.lastSeen >= PRESENCE_WRITE_MS) p.lastSeen = now;
+    return;
+  }
+  const s = findSpectator(room, token);
+  if (s && now - s.lastSeen >= PRESENCE_WRITE_MS) s.lastSeen = now;
 }
 var roomCount = () => store.count();
 
@@ -5349,8 +5640,8 @@ var VOICE_KEEP = 120;
 // server/voice.ts
 var KINDS = ["offer", "answer", "ice"];
 function postVoice(room, token, payload) {
-  const actor = room.players.find((p) => p.id === token);
-  if (!actor) return "\u8EAB\u4EFD\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u52A0\u5165\u623F\u95F4";
+  const actor = findPlayer(room, token);
+  if (!actor || actor.watching) return "\u8EAB\u4EFD\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u52A0\u5165\u623F\u95F4";
   if (!actor.micOn) return "\u5148\u5F00\u9EA6\u518D\u8FDE\u63A5\u8BED\u97F3";
   const list = Array.isArray(payload?.signals) ? payload.signals.slice(0, VOICE_MAX_BATCH) : [];
   if (!list.length) return null;
@@ -5358,7 +5649,7 @@ function postVoice(room, token, payload) {
   for (const s of list) {
     if (!KINDS.includes(s?.kind)) return "\u4E0D\u8BA4\u8BC6\u7684\u8BED\u97F3\u4FE1\u4EE4";
     const to = String(s?.to ?? "");
-    if (to === token || !room.players.some((p) => p.id === to)) return "\u8BED\u97F3\u4FE1\u4EE4\u53D1\u7ED9\u4E86\u4E0D\u5728\u623F\u95F4\u91CC\u7684\u4EBA";
+    if (to === actor.id || !room.players.some((p) => p.id === to && !p.watching)) return "\u8BED\u97F3\u4FE1\u4EE4\u53D1\u7ED9\u4E86\u4E0D\u5728\u623F\u95F4\u91CC\u7684\u4EBA";
     const data = s?.data;
     if (!data || typeof data !== "object" || Array.isArray(data)) return "\u8BED\u97F3\u4FE1\u4EE4\u683C\u5F0F\u4E0D\u5BF9";
     if (JSON.stringify(data).length > VOICE_MAX_DATA) return "\u8BED\u97F3\u4FE1\u4EE4\u592A\u5927\u4E86";
@@ -5368,7 +5659,7 @@ function postVoice(room, token, payload) {
   const box = room.voice ?? (room.voice = []);
   for (const s of checked) {
     room.voiceSeq = (room.voiceSeq ?? 0) + 1;
-    box.push({ id: room.voiceSeq, from: token, to: s.to, kind: s.kind, data: s.data, at: now });
+    box.push({ id: room.voiceSeq, from: actor.id, to: s.to, kind: s.kind, data: s.data, at: now });
   }
   const cutoff = now - VOICE_TTL_MS;
   while (box.length && (box.length > VOICE_KEEP || box[0].at < cutoff)) box.shift();
@@ -5376,10 +5667,11 @@ function postVoice(room, token, payload) {
   return null;
 }
 function readVoice(room, token, since) {
-  if (!room.players.some((p) => p.id === token)) return "\u8EAB\u4EFD\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u52A0\u5165\u623F\u95F4";
+  const actor = findPlayer(room, token);
+  if (!actor) return "\u8EAB\u4EFD\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u52A0\u5165\u623F\u95F4";
   const now = Date.now();
   const signals = (room.voice ?? []).filter(
-    (s) => s.to === token && s.id > since && now - s.at < VOICE_TTL_MS
+    (s) => s.to === actor.id && s.id > since && now - s.at < VOICE_TTL_MS
   );
   return { signals, serverNow: now };
 }
@@ -5414,7 +5706,7 @@ async function createRoomRoute(b) {
   const input = {
     gameId: String(b.gameId),
     hostName: sanitizeName(b.hostName ?? ""),
-    hostAvatar: typeof b.hostAvatar === "string" ? b.hostAvatar.slice(0, 24) : void 0,
+    hostAvatar: cleanAvatarInput(b.hostAvatar),
     judgeMode: b.judgeMode === "human" ? "human" : "ai",
     profile: clampProfile(b.profile),
     variant: typeof b.variant === "string" ? b.variant.slice(0, 24) : void 0
@@ -5429,41 +5721,45 @@ async function createRoomRoute(b) {
 }
 async function joinRoute(b) {
   const code = normalize(b?.code);
-  const avatar = typeof b?.avatar === "string" ? b.avatar.slice(0, 24) : void 0;
+  const avatar = cleanAvatarInput(b?.avatar);
   const result = await joinRoom(code, String(b?.name ?? ""), avatar);
   if (result) return ok({ code: result.room.code, token: result.player.id, view: buildView(result.room, result.player.id) });
   const loaded = await loadRoom(code);
   if (!loaded) return bad(404, "\u627E\u4E0D\u5230\u8FD9\u4E2A\u623F\u95F4\uFF0C\u68C0\u67E5\u4E00\u4E0B\u623F\u95F4\u53F7");
-  if (loaded.room.phase !== "lobby") return bad(400, "\u8FD9\u5C40\u5DF2\u7ECF\u5F00\u59CB\u4E86\uFF0C\u7B49\u4E0B\u4E00\u5C40\u518D\u52A0\u5165\u5427");
+  if (loaded.room.phase !== "lobby") return bad(400, "\u8FD9\u5C40\u5DF2\u7ECF\u5F00\u59CB\u4E86\uFF0C\u53EF\u4EE5\u70B9\u300C\u89C2\u6218\u8FDB\u5165\u300D\u5148\u770B\u5C40\u52BF");
   const meta = GAME_BY_ID[loaded.room.gameId];
   if (meta && loaded.room.players.length >= meta.maxPlayers) {
-    return bad(400, `\u8FD9\u4E2A\u623F\u95F4\u6EE1\u4E86\uFF08${meta.name} \u6700\u591A ${meta.maxPlayers} \u4EBA\uFF09\uFF0C\u8BA9\u623F\u4E3B\u518D\u5F00\u4E00\u5C40`);
+    return bad(400, `\u8FD9\u4E2A\u623F\u95F4\u6EE1\u4E86\uFF08${meta.name} \u6700\u591A ${meta.maxPlayers} \u4EBA\uFF09\uFF0C\u53EF\u4EE5\u5148\u53BB\u89C2\u6218\u5E2D\u7B49\u7A7A\u4F4D`);
   }
   return bad(400, "\u540D\u5B57\u4E0D\u592A\u5BF9\uFF0C\u6362\u4E00\u4E2A\u8BD5\u8BD5");
 }
 async function viewRoute(code, token, watch = false) {
   const result = await mutateRoom(normalize(code), (room) => {
+    if (token && room.kickedIds?.includes(token)) return { kicked: true };
     const now = Date.now();
     advance2(room, now);
     markSeen(room, token, now);
-    return buildView(room, token, watch);
+    return { kicked: false, view: buildView(room, token, watch) };
   });
-  if (!result.ok) return bad(404, result.reason === "conflict" ? "\u623F\u95F4\u592A\u6324\u4E86\uFF0C\u518D\u5237\u4E00\u6B21" : "\u623F\u95F4\u4E0D\u5B58\u5728\u6216\u5DF2\u7ED3\u675F");
-  return ok({ view: result.value });
+  if (!result.ok) return bad(404, result.reason === "conflict" ? "\u623F\u95F4\u592A\u6324\u4E86\uFF0C\u518D\u5237\u4E00\u6B21" : "\u623F\u95F4\u5DF2\u89E3\u6563\u6216\u4E0D\u5B58\u5728");
+  if (result.value.kicked) return bad(403, "\u4F60\u5DF2\u88AB\u623F\u4E3B\u79FB\u51FA\u623F\u95F4");
+  return ok({ view: result.value.view });
 }
 async function actionRoute(code, token, action, payload) {
   const size = JSON.stringify(payload ?? {}).length;
-  if (size > 4e3) return bad(400, "\u8FD9\u6BB5\u5185\u5BB9\u592A\u957F\u4E86");
+  const limit = action === "avatar" ? 3e4 : 4e3;
+  if (size > limit) return bad(400, "\u8FD9\u6BB5\u5185\u5BB9\u592A\u957F\u4E86");
   const result = await mutateRoom(normalize(code), (room) => {
     advance2(room, Date.now());
     return act(room, token, action, payload);
   });
-  if (!result.ok) return bad(404, result.reason === "conflict" ? "\u8FD9\u4E00\u6B65\u6CA1\u5199\u4E0A\uFF0C\u518D\u70B9\u4E00\u6B21" : "\u623F\u95F4\u4E0D\u5B58\u5728\u6216\u5DF2\u7ED3\u675F");
+  if (!result.ok) return bad(404, result.reason === "conflict" ? "\u8FD9\u4E00\u6B65\u6CA1\u5199\u4E0A\uFF0C\u518D\u70B9\u4E00\u6B21" : "\u623F\u95F4\u5DF2\u89E3\u6563\u6216\u4E0D\u5B58\u5728");
   return ok({ error: result.value, view: buildView(result.room, token) });
 }
-async function nextRoute(code, token, force = false) {
+async function nextRoute(code, token, force = false, finish = false) {
   const result = await mutateRoom(normalize(code), (room) => {
     advance2(room, Date.now());
+    if (finish) return forceEnd(room, token || null);
     return force ? startRoom(room, token) : nextStep(room, token || null);
   });
   if (!result.ok) return bad(404, result.reason === "conflict" ? "\u8FD9\u4E00\u6B65\u6CA1\u5199\u4E0A\uFF0C\u518D\u70B9\u4E00\u6B21" : "\u623F\u95F4\u4E0D\u5B58\u5728\u6216\u5DF2\u7ED3\u675F");
@@ -5472,11 +5768,12 @@ async function nextRoute(code, token, force = false) {
 async function configureRoute(code, token, opts) {
   const game = opts?.game && typeof opts.game === "object" && !Array.isArray(opts.game) ? opts.game : void 0;
   const result = await mutateRoom(normalize(code), (room) => {
-    if (!room.players.some((p) => p.id === token && p.isHost)) return { denied: true, error: null };
-    return { denied: false, error: configureRoom(room, { ...opts, game }) };
+    const host = findPlayer(room, token);
+    if (!host?.isHost) return { denied: true, error: null };
+    return { denied: false, error: configureRoom(room, { ...opts, hostToken: token, game }) };
   });
-  if (!result.ok) return bad(404, result.reason === "conflict" ? "\u8FD9\u4E00\u6B65\u6CA1\u5199\u4E0A\uFF0C\u518D\u70B9\u4E00\u6B21" : "\u623F\u95F4\u4E0D\u5B58\u5728\u6216\u5DF2\u7ED3\u675F");
-  if (result.value.denied) return bad(403, "\u53EA\u6709\u623F\u4E3B\u80FD\u8BBE\u7F6E\u88C1\u5224");
+  if (!result.ok) return bad(404, result.reason === "conflict" ? "\u8FD9\u4E00\u6B65\u6CA1\u5199\u4E0A\uFF0C\u518D\u70B9\u4E00\u6B21" : "\u623F\u95F4\u5DF2\u89E3\u6563\u6216\u4E0D\u5B58\u5728");
+  if (result.value.denied) return bad(403, "\u53EA\u6709\u623F\u4E3B\u80FD\u6539\u623F\u95F4\u8BBE\u7F6E");
   return ok({ error: result.value.error, view: buildView(result.room, token) });
 }
 async function voiceGetRoute(code, token, since) {
@@ -5535,14 +5832,15 @@ function application(deps) {
       const body = await readJson(request);
       const token = String(body?.token ?? "");
       if (sub[2] === "action") return json(await actionRoute(code, token, String(body?.action ?? ""), body?.payload));
-      if (sub[2] === "next") return json(await nextRoute(code, token, !!body?.force));
+      if (sub[2] === "next") return json(await nextRoute(code, token, !!body?.force, !!body?.finish));
       if (sub[2] === "voice") return json(await voicePostRoute(code, token, body));
       return json(
         await configureRoute(code, token, {
           judgeMode: body?.judgeMode === void 0 ? void 0 : body.judgeMode === "human" ? "human" : "ai",
           refereeId: body?.refereeId === void 0 ? void 0 : body.refereeId === null ? null : String(body.refereeId),
           variant: body?.variant === void 0 ? void 0 : String(body.variant),
-          speakSeconds: body?.speakSeconds === void 0 ? void 0 : body.speakSeconds === null ? null : Number(body.speakSeconds)
+          speakSeconds: body?.speakSeconds === void 0 ? void 0 : body.speakSeconds === null ? null : Number(body.speakSeconds),
+          game: body?.game
         })
       );
     }

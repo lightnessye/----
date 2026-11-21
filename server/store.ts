@@ -35,6 +35,7 @@ export function memoryStore(): RoomStore {
       return { room: JSON.parse(json), json, expectedSeq: room.seq }
     },
     async insert(room) {
+      if (rooms.has(room.code)) return false
       rooms.set(room.code, room)
       return true
     },

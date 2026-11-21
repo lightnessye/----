@@ -12,6 +12,7 @@ import {
   seated,
   secondsLeft,
   seven,
+  speakLimitMs,
 } from './util'
 
 const START_MS = 3000
@@ -87,9 +88,9 @@ function stepCircle(room: Room, d: SevenData) {
   ev(room, 'info', `轮到 ${nx ? clip(nx.name, 12) : '下一位'}，数字 ${d.count}。`)
 }
 
-/** 收紧时限：数字越大越快， floor(count/5)*200 递减，最快 1.2 秒 */
-function tighten(d: SevenData) {
-  d.speedMs = Math.max(MIN_MS, START_MS - Math.floor(d.count / 5) * 200)
+/** 收紧时限：房主设的轮次时间当基准，数字越大越快，floor(count/5)*200 递减，最快 1.2 秒 */
+function tighten(room: Room, d: SevenData) {
+  d.speedMs = Math.max(MIN_MS, speakLimitMs(room, START_MS) - Math.floor(d.count / 5) * 200)
 }
 
 /**
@@ -138,7 +139,7 @@ function startSeven(room: Room) {
   d.mistakes = {}
   d.struck = []
   d.lastCall = null
-  d.speedMs = START_MS
+  d.speedMs = speakLimitMs(room, START_MS)
   phase(room, 'run', { ms: d.speedMs })
   const first = byId(room, d.order[0])
   ev(
@@ -160,7 +161,7 @@ export const sevenEngine: GameEngine = {
     d.mistakes = {}
     d.struck = []
     d.lastCall = null
-    d.speedMs = START_MS
+    d.speedMs = speakLimitMs(room, START_MS)
     phase(room, 'lobby')
   },
 
@@ -181,7 +182,7 @@ export const sevenEngine: GameEngine = {
       if ((kind === 'pass') === isSevenish(d.count)) {
         d.lastCall = { by: actor.id, expect: d.count, kind, correct: true }
         d.count += 1
-        tighten(d)
+        tighten(room, d)
         stepCircle(room, d)
       } else {
         applyMiss(room, d, actor.id, kind, 'wrong')
@@ -211,7 +212,7 @@ export const sevenEngine: GameEngine = {
       const cur = currentId(room, d)
       ev(room, 'judge', `裁判放过 ${cur ? nameOf(room, cur) : '这一位'} 的「数字 ${d.count}」，这一下不记失误。`)
       d.count += 1
-      tighten(d)
+      tighten(room, d)
       stepCircle(room, d)
       return
     }
@@ -224,7 +225,8 @@ export const sevenEngine: GameEngine = {
     const d = seven(room)
     const cur = currentId(room, d)
     if (!cur) {
-      enterOver(room, d)
+      // 当前这位退出/去观战了：顺位往下走，圈子空了才收尾
+      stepCircle(room, d)
       return
     }
     applyMiss(room, d, cur, 'say', 'timeout')

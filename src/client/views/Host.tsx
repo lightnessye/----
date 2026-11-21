@@ -1,20 +1,27 @@
 import { useState } from 'react'
-import { configure } from '../api'
+import { configure, disbandRoom, kickPlayer, restartRoom } from '../api'
 import { useRoom } from '../hooks/useRoom'
 import { useShareBase } from '../hooks/useShareBase'
 import { uiFor } from '../games'
-import { JudgeBadge, QrImage, Seats, Scoreboard, SpeakBoard, Ticker, Timer, fmtSpeak } from '../ui/common'
+import { JudgeBadge, QrImage, Scoreboard, SpeakBoard, Ticker, Timer, fmtSpeak } from '../ui/common'
 import { ChatPanel } from '../ui/ChatPanel'
 import { VoicePanel } from '../ui/VoicePanel'
 import { GameSettings } from '../ui/GameSettings'
 import { StageView } from '../ui/StageView'
 import { RefereeConsole } from '../ui/RefereeConsole'
-import { joinHref, phoneHref, shareJoinHref } from '../route'
+import { PlayerGrid } from '../ui/PlayerGrid'
+import { SpectatorBar } from '../ui/SpectatorBar'
+import { RulesModal } from '../ui/RulesModal'
+import { Phone } from './Phone'
+import { forgetRoom, go, joinHref, shareJoinHref } from '../route'
+import { GAMES } from '../../shared/games'
 import { WOLF_VARIANTS } from '../../shared/werewolf'
 import type { Player, RoomView } from '../../shared/types'
 
 export function Host({ code, token, watch }: { code: string; token: string | null; watch?: boolean }) {
   const { view, error, secondsLeft, now, run, step, offline, refresh } = useRoom(code, token, watch)
+  const [rules, setRules] = useState(false)
+  const [overErr, setOverErr] = useState<string | null>(null)
 
   if (error && !view) {
     return (
@@ -44,6 +51,20 @@ export function Host({ code, token, watch }: { code: string; token: string | nul
   const isLobby = view.phase === 'lobby'
   const isOver = view.phase === 'over'
 
+  // 房主以玩家身份开局：直接进玩家界面，主持操作在那条主持栏里
+  const hostIsPlayer =
+    !!view.me && view.hostPlays && !(view.judgeMode === 'human' && view.refereeId === view.me.id)
+  if (!isLobby && !watch && hostIsPlayer) {
+    return <Phone code={code} token={token} asHost />
+  }
+
+  const backToLobby = async () => {
+    if (!token) return
+    const r = await restartRoom(code, token)
+    setOverErr(r.error ?? null)
+    if (!r.error) refresh()
+  }
+
   return (
     <div className="app">
       <div className="stage">
@@ -54,12 +75,17 @@ export function Host({ code, token, watch }: { code: string; token: string | nul
             <div className="dim">{view.meta.latin}</div>
           </div>
           <div style={{ marginLeft: 'auto' }} className="row">
+            <button type="button" className="btn tiny" onClick={() => setRules(true)}>
+              📖 规则
+            </button>
             <span className="chip hot">{isLobby ? '房间号' : ui.phaseName(view)}</span>
             {!isLobby && <JudgeBadge view={view} />}
             <span className="chip">{view.players.length} 人</span>
             {offline && <span className="chip" style={{ color: 'var(--bad)' }}>重连中…</span>}
           </div>
         </div>
+
+        <SpectatorBar view={view} />
 
         {isLobby ? (
           <Lobby view={view} token={token} step={step} run={run} now={now} refresh={refresh} />
@@ -81,30 +107,23 @@ export function Host({ code, token, watch }: { code: string; token: string | nul
 
               {!watch && (
                 <div className="stagebar">
-                  <button className="btn go" onClick={() => void step()}>
-                    {isOver ? '停在这一页' : '下一步 →'}
-                  </button>
+                  {isOver ? (
+                    <button className="btn primary" onClick={() => void backToLobby()}>
+                      返回大厅 · 开下一局
+                    </button>
+                  ) : (
+                    <button className="btn go" onClick={() => void step()}>
+                      下一步 →
+                    </button>
+                  )}
                   <a className="btn ghost tiny" href={joinHref(view.code)}>
                     手机加入页
                   </a>
-                  {view.me &&
-                    view.hostPlays &&
-                    !(view.judgeMode === 'human' && view.refereeId === view.me.id) && (
-                    <a
-                      className="btn ghost tiny"
-                      href={phoneHref(view.code)}
-                      target="_blank"
-                      rel="noreferrer"
-                      title="在新标签页打开你自己的玩家页，轮到你时在那里提交"
-                    >
-                      我也玩
-                    </a>
-                  )}
                   {!isOver && (
                     <button
                       className="btn ghost tiny"
                       onClick={() => {
-                        if (confirm('直接结算这一局？正在填写的内容会丢掉。')) void step()
+                        if (confirm('直接结算这一局？正在填写的内容会丢掉。')) void step(true)
                       }}
                       style={{ marginLeft: 'auto' }}
                     >
@@ -113,18 +132,18 @@ export function Host({ code, token, watch }: { code: string; token: string | nul
                   )}
                 </div>
               )}
+              {overErr && <div className="banner err" style={{ marginTop: 10 }}>{overErr}</div>}
             </div>
 
             <div className="stage-side">
               {!watch && <RefereeConsole view={view} run={run} />}
-              {!watch && <SpeakLimit view={view} token={token} />}
               <div className="panel">
                 <div className="h">裁判播报</div>
                 <Ticker events={view.events} limit={9} />
               </div>
               <div className="panel">
                 <div className="h">在场玩家</div>
-                <Seats view={view} turnId={ui.turnId?.(view) ?? null} compact />
+                <PlayerGrid view={view} turnId={ui.turnId?.(view) ?? null} />
               </div>
               <SpeakBoard view={view} now={now} />
               <VoicePanel view={view} run={run} />
@@ -143,6 +162,8 @@ export function Host({ code, token, watch }: { code: string; token: string | nul
             </div>
           </div>
         )}
+
+        {rules && <RulesModal view={view} onClose={() => setRules(false)} />}
       </div>
     </div>
   )
@@ -200,6 +221,45 @@ function Lobby({
     setBusy(false)
   }
 
+  const switchGame = async (gameId: string) => {
+    if (!token || gameId === view.gameId) return
+    setBusy(true)
+    const r = await configure(view.code, token, { gameId })
+    setErr(r.error ?? null)
+    setBusy(false)
+    refresh()
+  }
+
+  const setHostPlays = async (on: boolean) => {
+    if (!token) return
+    setBusy(true)
+    const r = await configure(view.code, token, { hostPlays: on })
+    setErr(r.error ?? null)
+    setBusy(false)
+  }
+
+  const kick = async (id: string, name: string) => {
+    if (!token) return
+    if (!confirm(`把 ${name} 移出房间？只有开局前能踢人。`)) return
+    const r = await kickPlayer(view.code, token, id)
+    setErr(r.error ?? null)
+    refresh()
+  }
+
+  const disband = async () => {
+    if (!token) return
+    if (!confirm('解散这个房间？所有人都要重新开一局。')) return
+    const r = await disbandRoom(view.code, token)
+    if (r.error) {
+      setErr(r.error)
+      return
+    }
+    forgetRoom(view.code)
+    go('/')
+  }
+
+  const seatedCount = view.players.filter((p) => !p.watching).length
+
   return (
     <div className="stage-body">
       <div className="stage-main">
@@ -228,6 +288,35 @@ function Lobby({
         </div>
 
         <div className="panel">
+          <div className="h">这局玩什么 · 开局前随时换</div>
+          <div className="game-switch">
+            {GAMES.map((g) => {
+              const on = g.id === view.gameId
+              const tooMany = seatedCount > g.maxPlayers
+              return (
+                <button
+                  key={g.id}
+                  type="button"
+                  className={`gs-item${on ? ' on' : ''}${tooMany && !on ? ' disabled' : ''}`}
+                  disabled={busy || on || tooMany}
+                  title={tooMany ? `现在 ${seatedCount} 人，超过这个游戏上限 ${g.maxPlayers} 人` : g.desc}
+                  onClick={() => void switchGame(g.id)}
+                >
+                  <span className="gs-emoji">{g.emoji}</span>
+                  <span className="gs-name">{g.name}</span>
+                  <span className="gs-meta">
+                    {g.minPlayers}–{g.maxPlayers} 人 · {g.minutes[0]}–{g.minutes[1]} 分钟
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+          <p className="notice" style={{ marginTop: 10, marginBottom: 0 }}>
+            换游戏会重置本局设置，开局后就不能再换了。
+          </p>
+        </div>
+
+        <div className="panel">
           <div className="h">这局怎么玩</div>
           <p className="sub" style={{ marginBottom: 12 }}>
             {view.meta.desc}
@@ -252,6 +341,32 @@ function Lobby({
                   : '一台设备就够'}
             </span>
           </div>
+        </div>
+
+        <div className="panel">
+          <div className="h">房主身份</div>
+          <div className="seg">
+            <button
+              className={view.hostPlays ? 'on' : ''}
+              disabled={busy}
+              onClick={() => void setHostPlays(true)}
+            >
+              🎮 我也玩
+            </button>
+            <button
+              className={!view.hostPlays ? 'on' : ''}
+              disabled={busy}
+              onClick={() => void setHostPlays(false)}
+            >
+              🎬 只主持
+            </button>
+          </div>
+          <p className="notice" style={{ marginTop: 10, marginBottom: 0 }}>
+            {view.hostPlays
+              ? '开局后你的手机页就是玩家界面，顶上多一条主持栏（下一步 / 提前结束 / 返回大厅）。'
+              : '开局后你留在大屏当主持，不占玩家座位。'}
+            {hostIsReferee && ' 你现在被选为真人裁判，开局后以裁判界面为准。'}
+          </p>
         </div>
 
         <div className="panel">
@@ -350,25 +465,21 @@ function Lobby({
           <span className="dim">
             最少 {view.meta.minPlayers} 人。现在 {participants} 人 · {Math.round((now / 1000) % 60)}
           </span>
-          {view.me && view.hostPlays && !hostIsReferee && (
-            <a
-              className="btn ghost tiny"
-              href={phoneHref(view.code)}
-              target="_blank"
-              rel="noreferrer"
-              style={{ marginLeft: 'auto' }}
-              title="在新标签页打开你自己的玩家页，轮到你时在那里提交"
-            >
-              我也玩
-            </a>
-          )}
+          <button
+            className="btn ghost tiny"
+            style={{ marginLeft: 'auto', color: 'var(--bad)' }}
+            disabled={busy}
+            onClick={() => void disband()}
+          >
+            解散房间
+          </button>
         </div>
       </div>
 
       <div className="stage-side">
         <div className="panel">
-          <div className="h">已经进来的人</div>
-          <Seats view={view} />
+          <div className="h">已经进来的人 · 点 ✕ 可移出</div>
+          <PlayerGrid view={view} onKick={(id, name) => void kick(id, name)} />
           {participants < view.meta.minPlayers && (
             <p className="notice" style={{ marginTop: 12 }}>
               把上面那个链接发到聚会群里，人齐了就自动能开始。
@@ -437,7 +548,7 @@ function SpeakLimit({ view, token }: { view: RoomView; token: string | null }) {
         </button>
       </div>
       <p className="notice" style={{ marginTop: 10, marginBottom: 0 }}>
-        轮到每个人发言 / 表演时的倒计时上限，设置后从下一位开始生效。默认按各游戏推荐值。
+        轮到每个人发言 / 表演时的倒计时上限。开局后锁定，玩到一半不能改；默认按各游戏推荐值。
       </p>
       {err && <div className="banner err" style={{ marginTop: 10 }}>{err}</div>}
     </div>
@@ -447,6 +558,8 @@ function SpeakLimit({ view, token }: { view: RoomView; token: string | null }) {
 function Result({ view }: { view: RoomView }) {
   const f = view.finished
   if (!f) return null
+  const board =
+    f.board ?? f.winners.map((w, i) => ({ rank: i + 1, name: w.name, score: w.score, win: i === 0 }))
   const talkers = view.players
     .map((p) => ({ name: p.name, ms: p.speakMs ?? 0 }))
     .filter((t) => t.ms > 0)
@@ -461,12 +574,14 @@ function Result({ view }: { view: RoomView }) {
         </p>
       ))}
       <div className="divider" />
+      <div className="h" style={{ marginBottom: 8 }}>排行榜</div>
       <div className="stack" style={{ gap: 8 }}>
-        {f.winners.map((w, i) => (
-          <div className="rank" key={i}>
-            <span className="no">{i + 1}</span>
-            <b>{w.name}</b>
-            <span className="sc">{w.score}</span>
+        {board.map((b, i) => (
+          <div className={`rank${b.win ? ' win' : ''}`} key={i}>
+            <span className="no">{b.rank}</span>
+            <b>{b.name}</b>
+            {b.win && <span className="win-tag">胜</span>}
+            <span className="sc">{b.score}</span>
           </div>
         ))}
       </div>

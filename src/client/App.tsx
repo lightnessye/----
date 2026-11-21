@@ -4,6 +4,7 @@ import { Home } from './views/Home'
 import { Host } from './views/Host'
 import { Join } from './views/Join'
 import { Phone } from './views/Phone'
+import { Watch } from './views/Watch'
 import { parse, tokenFor, type Route } from './route'
 
 export function App() {
@@ -22,8 +23,14 @@ export function App() {
       return <Join initialCode={route.code} />
     case 'host':
       return <Host key={route.code} code={route.code} token={tokenFor(route.code)} />
-    case 'watch':
-      return <Host key={route.code} code={route.code} token={null} watch />
+    case 'watch': {
+      const t = tokenFor(route.code)
+      return t ? (
+        <Watch key={route.code} code={route.code} token={t} />
+      ) : (
+        <Host key={route.code} code={route.code} token={null} watch />
+      )
+    }
     case 'phone':
       return <Phone key={route.code} code={route.code} token={tokenFor(route.code)} />
     default:

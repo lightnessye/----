@@ -8,17 +8,25 @@ import {
   act,
   advance,
   buildView,
+  checkDisband,
+  cleanAvatarInput,
   configureRoom,
   createRoom,
+  findPlayer,
   joinRoom,
+  kickPlayer,
   loadRoom,
   markSeen,
   mutateRoom,
   nextStep,
+  forceEnd,
   normalize,
+  removeRoom,
+  restartRoom,
   roomCount,
   sanitizeName,
   startRoom,
+  watchJoin,
   type CreateInput,
 } from './rooms'
 import { postVoice, readVoice } from './voice'
@@ -64,7 +72,7 @@ export async function createRoomRoute(b: any): Promise<ApiResponse> {
   const input: CreateInput = {
     gameId: String(b.gameId),
     hostName: sanitizeName(b.hostName ?? ''),
-    hostAvatar: typeof b.hostAvatar === 'string' ? b.hostAvatar.slice(0, 24) : undefined,
+    hostAvatar: cleanAvatarInput(b.hostAvatar),
     judgeMode: b.judgeMode === 'human' ? 'human' : 'ai',
     profile: clampProfile(b.profile),
     variant: typeof b.variant === 'string' ? b.variant.slice(0, 24) : undefined,
@@ -81,45 +89,61 @@ export async function createRoomRoute(b: any): Promise<ApiResponse> {
 
 export async function joinRoute(b: any): Promise<ApiResponse> {
   const code = normalize(b?.code)
-  const avatar = typeof b?.avatar === 'string' ? b.avatar.slice(0, 24) : undefined
+  const avatar = cleanAvatarInput(b?.avatar)
   const result = await joinRoom(code, String(b?.name ?? ''), avatar)
   if (result) return ok({ code: result.room.code, token: result.player.id, view: buildView(result.room, result.player.id) })
 
   const loaded = await loadRoom(code)
   if (!loaded) return bad(404, '找不到这个房间，检查一下房间号')
-  if (loaded.room.phase !== 'lobby') return bad(400, '这局已经开始了，等下一局再加入吧')
+  if (loaded.room.phase !== 'lobby') return bad(400, '这局已经开始了，可以点「观战进入」先看局势')
   const meta = GAME_BY_ID[loaded.room.gameId]
   if (meta && loaded.room.players.length >= meta.maxPlayers) {
-    return bad(400, `这个房间满了（${meta.name} 最多 ${meta.maxPlayers} 人），让房主再开一局`)
+    return bad(400, `这个房间满了（${meta.name} 最多 ${meta.maxPlayers} 人），可以先去观战席等空位`)
   }
   return bad(400, '名字不太对，换一个试试')
 }
 
+export async function watchJoinRoute(b: any): Promise<ApiResponse> {
+  const code = normalize(b?.code)
+  const result = await watchJoin(code, String(b?.name ?? ''), cleanAvatarInput(b?.avatar))
+  if (result) {
+    return ok({ code: result.room.code, token: result.spectator.id, view: buildView(result.room, result.spectator.id) })
+  }
+  const loaded = await loadRoom(code)
+  if (!loaded) return bad(404, '找不到这个房间，检查一下房间号')
+  return bad(400, '观战席满了或名字不太对，换一个试试')
+}
+
 export async function viewRoute(code: string, token: string | null, watch = false): Promise<ApiResponse> {
   const result = await mutateRoom(normalize(code), (room) => {
+    if (token && room.kickedIds?.includes(token)) return { kicked: true as const }
     const now = Date.now()
     advance(room, now)
     markSeen(room, token, now)
-    return buildView(room, token, watch)
+    return { kicked: false as const, view: buildView(room, token, watch) }
   })
-  if (!result.ok) return bad(404, result.reason === 'conflict' ? '房间太挤了，再刷一次' : '房间不存在或已结束')
-  return ok({ view: result.value })
+  if (!result.ok) return bad(404, result.reason === 'conflict' ? '房间太挤了，再刷一次' : '房间已解散或不存在')
+  if (result.value.kicked) return bad(403, '你已被房主移出房间')
+  return ok({ view: result.value.view })
 }
 
 export async function actionRoute(code: string, token: string, action: string, payload: any): Promise<ApiResponse> {
   const size = JSON.stringify(payload ?? {}).length
-  if (size > 4000) return bad(400, '这段内容太长了')
+  // 照片头像走 action 上传，单独放宽到一张压缩图的体积
+  const limit = action === 'avatar' ? 30_000 : 4000
+  if (size > limit) return bad(400, '这段内容太长了')
   const result = await mutateRoom(normalize(code), (room) => {
     advance(room, Date.now())
     return act(room, token, action, payload)
   })
-  if (!result.ok) return bad(404, result.reason === 'conflict' ? '这一步没写上，再点一次' : '房间不存在或已结束')
+  if (!result.ok) return bad(404, result.reason === 'conflict' ? '这一步没写上，再点一次' : '房间已解散或不存在')
   return ok({ error: result.value, view: buildView(result.room, token) })
 }
 
-export async function nextRoute(code: string, token: string, force = false): Promise<ApiResponse> {
+export async function nextRoute(code: string, token: string, force = false, finish = false): Promise<ApiResponse> {
   const result = await mutateRoom(normalize(code), (room) => {
     advance(room, Date.now())
+    if (finish) return forceEnd(room, token || null)
     return force ? startRoom(room, token) : nextStep(room, token || null)
   })
   if (!result.ok) return bad(404, result.reason === 'conflict' ? '这一步没写上，再点一次' : '房间不存在或已结束')
@@ -132,12 +156,36 @@ export async function configureRoute(code: string, token: string, opts: any): Pr
       ? (opts.game as Record<string, unknown>)
       : undefined
   const result = await mutateRoom(normalize(code), (room) => {
-    if (!room.players.some((p) => p.id === token && p.isHost)) return { denied: true as const, error: null }
-    return { denied: false as const, error: configureRoom(room, { ...opts, game }) }
+    const host = findPlayer(room, token)
+    if (!host?.isHost) return { denied: true as const, error: null }
+    return { denied: false as const, error: configureRoom(room, { ...opts, hostToken: token, game }) }
   })
-  if (!result.ok) return bad(404, result.reason === 'conflict' ? '这一步没写上，再点一次' : '房间不存在或已结束')
-  if (result.value.denied) return bad(403, '只有房主能设置裁判')
+  if (!result.ok) return bad(404, result.reason === 'conflict' ? '这一步没写上，再点一次' : '房间已解散或不存在')
+  if (result.value.denied) return bad(403, '只有房主能改房间设置')
   return ok({ error: result.value.error, view: buildView(result.room, token) })
+}
+
+export async function kickRoute(code: string, token: string, target: string): Promise<ApiResponse> {
+  const result = await mutateRoom(normalize(code), (room) => kickPlayer(room, token, target))
+  if (!result.ok) return bad(404, result.reason === 'conflict' ? '这一步没写上，再点一次' : '房间已解散或不存在')
+  return ok({ error: result.value, view: buildView(result.room, token) })
+}
+
+export async function disbandRoute(code: string, token: string): Promise<ApiResponse> {
+  const result = await mutateRoom(normalize(code), (room) => checkDisband(room, token))
+  if (!result.ok) return bad(404, result.reason === 'conflict' ? '再点一次' : '房间已解散或不存在')
+  if (result.value) return ok({ error: result.value })
+  await removeRoom(code)
+  return ok({ error: null })
+}
+
+export async function restartRoute(code: string, token: string): Promise<ApiResponse> {
+  const result = await mutateRoom(normalize(code), (room) => {
+    advance(room, Date.now())
+    return restartRoom(room, token)
+  })
+  if (!result.ok) return bad(404, result.reason === 'conflict' ? '这一步没写上，再点一次' : '房间已解散或不存在')
+  return ok({ error: result.value, view: buildView(result.room, token) })
 }
 
 /** 语音信令：GET 只读不写库，POST 走和其他动作一样的乐观锁 */

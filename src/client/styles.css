@@ -1310,6 +1310,25 @@ input[type='range']::-moz-range-thumb {
   font-weight: 900;
 }
 
+.rank.win {
+  background: linear-gradient(90deg, rgba(255, 214, 102, 0.32), rgba(255, 255, 255, 0.72));
+  border-color: rgba(201, 151, 28, 0.5);
+}
+
+.rank.win .no {
+  color: #b07d10;
+}
+
+.win-tag {
+  font-size: 12px;
+  font-weight: 800;
+  color: #8a6100;
+  background: rgba(255, 214, 102, 0.5);
+  border: 1px solid rgba(201, 151, 28, 0.45);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
 /* ----------------------------- 首页 ----------------------------- */
 
 .home-hero {
@@ -3366,5 +3385,391 @@ input.field.home-join-code {
 .me-card .who span {
   font-size: 12.5px;
   color: var(--ink-faint);
+}
+
+/* ---------------- 玩家头像墙：一行四个，号角在左上，名字在下 ---------------- */
+.player-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px 8px;
+}
+
+.pg-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 2px 6px;
+  border-radius: 14px;
+  border: 1.5px solid transparent;
+  transition: border-color 0.15s, background 0.15s, opacity 0.15s;
+}
+
+.pg-cell.me {
+  background: rgba(10, 159, 131, 0.07);
+  border-color: rgba(10, 159, 131, 0.28);
+}
+
+.pg-cell.turn {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(10, 159, 131, 0.16);
+}
+
+.pg-cell.out {
+  opacity: 0.55;
+}
+
+.pg-avatar {
+  position: relative;
+  width: 58px;
+  height: 58px;
+}
+
+.pg-seat {
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(150deg, var(--accent), var(--accent-2));
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(8, 60, 48, 0.3);
+  font-variant-numeric: tabular-nums;
+}
+
+.pg-mic {
+  position: absolute;
+  right: -4px;
+  bottom: -2px;
+  font-size: 13px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
+}
+
+.pg-off {
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  transform: translateX(-50%);
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(90, 90, 90, 0.85);
+  border-radius: 8px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+.pg-kick {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(207, 63, 63, 0.5);
+  background: #fff;
+  color: var(--bad);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s, transform 0.1s;
+}
+
+.pg-kick:hover {
+  background: var(--bad);
+  color: #fff;
+  transform: scale(1.08);
+}
+
+.pg-name {
+  max-width: 100%;
+  font-size: 13px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.pg-crown {
+  font-size: 11px;
+}
+
+.pg-tag {
+  font-size: 11px;
+  color: var(--ink-faint);
+  min-height: 14px;
+}
+
+/* ---------------- 观战席：房间最上面一条 ---------------- */
+.spectator-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 9px 12px;
+  border: 1.5px dashed rgba(8, 121, 173, 0.4);
+  border-radius: 14px;
+  background: rgba(8, 121, 173, 0.05);
+}
+
+.sb-label {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--cool);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.sb-empty {
+  font-size: 12.5px;
+  color: var(--ink-faint);
+}
+
+.sb-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px 3px 4px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid rgba(8, 121, 173, 0.25);
+  font-size: 12.5px;
+}
+
+.sb-chip b {
+  font-weight: 700;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sb-chip.off {
+  opacity: 0.55;
+}
+
+.sb-chip.me {
+  border-color: var(--cool);
+  box-shadow: 0 0 0 2px rgba(8, 121, 173, 0.15);
+}
+
+.sb-seat {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--cool);
+}
+
+.sb-take {
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: linear-gradient(150deg, var(--cool), #065a82);
+  transition: transform 0.1s, filter 0.15s;
+}
+
+.sb-take:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+/* ---------------- 语音双控：麦克风 / 扬声器 ---------------- */
+.voice-duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.voice-toggle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 13px 8px 11px;
+  border-radius: 16px;
+  border: 1.5px solid var(--line);
+  background: var(--paper);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+
+.voice-toggle:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.voice-toggle:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.voice-toggle b {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.vt-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.vt-state {
+  font-size: 11.5px;
+  color: var(--ink-faint);
+  text-align: center;
+}
+
+.voice-toggle.on.mic {
+  border-color: rgba(207, 63, 63, 0.55);
+  background: rgba(207, 63, 63, 0.07);
+}
+
+.voice-toggle.on.mic .vt-state {
+  color: var(--bad);
+  font-weight: 700;
+}
+
+.voice-toggle.on.spk {
+  border-color: rgba(15, 145, 103, 0.55);
+  background: rgba(15, 145, 103, 0.07);
+}
+
+.voice-toggle.on.spk .vt-state {
+  color: var(--good);
+  font-weight: 700;
+}
+
+/* ---------------- 聊天折叠头 ---------------- */
+.chat-toggle {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+.chat-toggle .chat-readonly {
+  margin-left: 0;
+}
+
+.chat-caret {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--ink-faint);
+}
+
+.chat-unread {
+  font-size: 11px;
+  padding: 2px 9px;
+}
+
+/* ---------------- 房主主持栏（玩家界面里） ---------------- */
+.host-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(10, 159, 131, 0.4);
+  background: linear-gradient(150deg, rgba(10, 159, 131, 0.1), rgba(8, 121, 173, 0.06));
+}
+
+.hb-label {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--accent-2);
+  letter-spacing: 0.04em;
+  margin-right: 2px;
+}
+
+/* ---------------- 大厅换游戏 ---------------- */
+.game-switch {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.gs-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 12px 6px 10px;
+  border-radius: 15px;
+  border: 1.5px solid var(--line);
+  background: var(--paper);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s, opacity 0.15s;
+}
+
+.gs-item:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: rgba(10, 159, 131, 0.5);
+}
+
+.gs-item.on {
+  border-color: var(--accent);
+  background: rgba(10, 159, 131, 0.09);
+  box-shadow: 0 0 0 3px rgba(10, 159, 131, 0.14);
+}
+
+.gs-item.disabled,
+.gs-item:disabled:not(.on) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.gs-emoji {
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+.gs-name {
+  font-size: 13.5px;
+  font-weight: 800;
+}
+
+.gs-meta {
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  text-align: center;
+}
+
+@media (max-width: 560px) {
+  .game-switch {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---------------- 规则小窗 ---------------- */
+.rules-modal {
+  width: min(560px, 100%);
 }
 

@@ -1,12 +1,13 @@
 import { judge, rankByScore } from '../judge'
 import type { BombData, FinalResult, Player, Room, RoomView, ViewNeeds } from '../types'
 import type { GameEngine } from './contract'
-import { addScore, byId, bomb, ev, nameOf, phase, pick, randInt, retime, seated, shuffle } from './util'
+import { addScore, byId, bomb, ev, nameOf, phase, pick, randInt, retime, seated, shuffle, speakLimitMs } from './util'
 
 /* ----------------------------- 常量 ----------------------------- */
 
-/** 每人报数的时限 */
+/** 每人报数的默认时限；房主在大厅设了轮次时间就用他的 */
 const HUNT_MS = 15_000
+const huntMs = (room: Room) => speakLimitMs(room, HUNT_MS)
 /** 总轮数 */
 const MAX_ROUND = 3
 const MIN_VALUE = 1
@@ -64,23 +65,27 @@ function newRound(room: Room) {
   d.cursor = 0
   d.loser = null
   // round 同时镜像到 room.round，大屏的「第 X 轮」标签直接读它
-  phase(room, 'hunt', { ms: HUNT_MS, round: d.round })
+  phase(room, 'hunt', { ms: huntMs(room), round: d.round })
   ev(
     room,
     'judge',
-    `第 ${d.round} 颗雷已经埋进 ${MIN_VALUE} 到 ${MAX_VALUE} 之间，全场没人知道是哪个。先从 ${currentName(room, d)} 开始，15 秒一个。`,
+    `第 ${d.round} 颗雷已经埋进 ${MIN_VALUE} 到 ${MAX_VALUE} 之间，全场没人知道是哪个。先从 ${currentName(room, d)} 开始，${Math.round(huntMs(room) / 1000)} 秒一个。`,
   )
 }
 
-/** 换到下一个报数的人 */
+/** 换到下一个报数的人；退出观战的座位直接跳过 */
 function advance(room: Room) {
   const d = bomb(room)
   if (d.order.length === 0) {
-    retime(room, HUNT_MS)
+    retime(room, huntMs(room))
     return
   }
-  d.cursor = (d.cursor + 1) % d.order.length
-  retime(room, HUNT_MS)
+  for (let i = 0; i < d.order.length; i++) {
+    d.cursor = (d.cursor + 1) % d.order.length
+    const p = byId(room, d.order[d.cursor])
+    if (p && !p.watching) break
+  }
+  retime(room, huntMs(room))
 }
 
 /** 每轮结束时，安全活下来的人各 +1，保证结算页有排序意义 */
@@ -229,8 +234,7 @@ export const bombEngine: GameEngine = {
       if (value < d.target) d.low = Math.max(d.low, value + 1)
       else d.high = Math.min(d.high, value - 1)
 
-      d.cursor = d.order.length ? (d.cursor + 1) % d.order.length : 0
-      retime(room, HUNT_MS)
+      advance(room)
 
       const width = widthOf(d)
       const pressure = pick(width <= 2 ? PRESS_DEADLY : width <= 5 ? PRESS_TIGHT : PRESS_NORMAL)
@@ -272,11 +276,11 @@ export const bombEngine: GameEngine = {
     if (room.phase !== 'hunt') return
     const d = bomb(room)
 
-    // 中途有人退出：跳过不在场的当前人，别让全场干等
+    // 中途有人退出/去观战：跳过不在场的当前人，别让全场干等
     const cur = byId(room, currentId(d) ?? '')
-    if (!cur) {
+    if (!cur || cur.watching) {
       // 一个能报数的人都不剩就安静等着，避免每个 tick 刷屏
-      if (!d.order.some((id) => byId(room, id))) return
+      if (!d.order.some((id) => { const p = byId(room, id); return p && !p.watching })) return
       advance(room)
       ev(room, 'info', '这位不在现场，先跳过，继续报数。')
       return

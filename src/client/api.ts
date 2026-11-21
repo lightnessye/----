@@ -41,6 +41,31 @@ export function joinRoom(code: string, name: string, avatar?: string) {
   return req<CreatedRoom>('/api/join', { method: 'POST', body: JSON.stringify({ code, name, avatar }) })
 }
 
+export function watchJoinRoom(code: string, name: string, avatar?: string) {
+  return req<CreatedRoom>('/api/watch-join', { method: 'POST', body: JSON.stringify({ code, name, avatar }) })
+}
+
+export function kickPlayer(code: string, token: string, target: string) {
+  return req<{ error: string | null; view: RoomView }>(`/api/rooms/${encodeURIComponent(code)}/kick`, {
+    method: 'POST',
+    body: JSON.stringify({ token, target }),
+  })
+}
+
+export function disbandRoom(code: string, token: string) {
+  return req<{ error: string | null }>(`/api/rooms/${encodeURIComponent(code)}/disband`, {
+    method: 'POST',
+    body: JSON.stringify({ token }),
+  })
+}
+
+export function restartRoom(code: string, token: string) {
+  return req<{ error: string | null; view: RoomView }>(`/api/rooms/${encodeURIComponent(code)}/restart`, {
+    method: 'POST',
+    body: JSON.stringify({ token }),
+  })
+}
+
 export function fetchView(code: string, token: string | null, watch = false) {
   const q = new URLSearchParams()
   if (token) q.set('token', token)
@@ -52,20 +77,20 @@ export function sendAction(code: string, token: string, action: string, payload:
   return req<{ error: string | null; view: RoomView }>(`/api/rooms/${encodeURIComponent(code)}/action`, {
     method: 'POST',
     body: JSON.stringify({ token, action, payload }),
-  }).then((r) => r.view)
+  })
 }
 
-export function sendNext(code: string, token: string) {
+export function sendNext(code: string, token: string, finish = false) {
   return req<{ error: string | null; view: RoomView }>(`/api/rooms/${encodeURIComponent(code)}/next`, {
     method: 'POST',
-    body: JSON.stringify({ token }),
+    body: JSON.stringify({ token, finish }),
   })
 }
 
 export function configure(
   code: string,
   token: string,
-  opts: { judgeMode?: 'ai' | 'human'; refereeId?: string | null; variant?: string; speakSeconds?: number | null; game?: Record<string, unknown> },
+  opts: { judgeMode?: 'ai' | 'human'; refereeId?: string | null; variant?: string; speakSeconds?: number | null; hostPlays?: boolean; gameId?: string; game?: Record<string, unknown> },
 ) {
   return req<{ error: string | null; view: RoomView }>(`/api/rooms/${encodeURIComponent(code)}/configure`, {
     method: 'POST',

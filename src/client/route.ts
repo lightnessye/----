@@ -38,7 +38,7 @@ export interface RecentRoom {
   code: string
   at: number
   gameId: string | null
-  role: 'host' | 'player'
+  role: 'host' | 'player' | 'watcher'
 }
 
 function read(): Creds {
@@ -53,7 +53,7 @@ export function tokenFor(code: string): string | null {
   return read()[code.toUpperCase()] ?? null
 }
 
-export function saveToken(code: string, token: string, meta?: { gameId?: string; role?: 'host' | 'player' }) {
+export function saveToken(code: string, token: string, meta?: { gameId?: string; role?: 'host' | 'player' | 'watcher' }) {
   const key = code.toUpperCase()
   const all = read()
   all[key] = token
@@ -100,6 +100,9 @@ export const gamesHref = '/games.html'
 
 /** 房主自己也是玩家时，打开本人的手机玩家页（私密输入，不上投屏） */
 export const phoneHref = (code: string) => `/p?c=${code.toUpperCase()}`
+
+/** 具名观战页：看公开局势，可聊天、接替空位 */
+export const watchHref = (code: string) => `/watch.html?c=${code.toUpperCase()}`
 
 /** 下面两个是给「别的设备」看的地址，所以用服务端算出来的可访问 base */
 export const shareJoinHref = (code: string, base: string | null) =>

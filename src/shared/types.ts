@@ -90,6 +90,27 @@ export interface Player {
   speakMs?: number
   /** 是否开着麦；语音流走 P2P，这里只广播状态，老房间没有按 false 兜底 */
   micOn?: boolean
+  /** 退出对局去观战：座位保留，引擎跳过他，观战席里可以被人接替 */
+  watching?: boolean
+  /** 座位被观战者接替后，新主人的令牌；认证认它，不再认原来的 id */
+  claimToken?: string
+}
+
+/** 具名观战者：不进游戏池，能看公开局势、聊天，大厅里可加入、局中可接替空位 */
+export interface Spectator {
+  id: string
+  name: string
+  avatar: string
+  lastSeen: number
+}
+
+/** 下发给各端的观战席条目；seat 非空表示这是一个保留中的空位，可接替 */
+export interface SpectatorInfo {
+  id: string
+  name: string
+  avatar: string
+  connected: boolean
+  seat: number | null
 }
 
 /** 房间聊天：和裁判播报分开的一条流，所有端都能看到 */
@@ -138,6 +159,10 @@ export interface Room {
   turnStartedAt?: number | null
 
   players: Player[]
+  /** 具名观战者（不含保留座位的退出玩家，那些人还在 players 里带 watching 标记） */
+  spectators?: Spectator[]
+  /** 被房主踢出的令牌，view 轮询时据此给出明确提示 */
+  kickedIds?: string[]
   data: GameData
   events: RoomEvent[]
   chat?: ChatMessage[]
@@ -147,11 +172,22 @@ export interface Room {
   finished: FinalResult | null
 }
 
+/** 结算排行榜上的一行：全员按分排名，同分同名 */
+export interface BoardEntry {
+  rank: number
+  name: string
+  score: number
+  /** 胜利方成员（团队游戏）或冠军（个人游戏） */
+  win: boolean
+}
+
 export interface FinalResult {
   title: string
   lines: string[]
   winners: { name: string; score: number }[]
   verdict: string
+  /** 全员排行榜，服务端结算时统一生成；老房间可能没有 */
+  board?: BoardEntry[]
 }
 
 /** 每个游戏把自己的私密状态塞进对应的可选字段。 */
@@ -420,6 +456,12 @@ export interface RoomView {
   role: Role
   me: Player | null
   players: Player[]
+  /** 观战席：具名观战者 + 保留座位的退出玩家（seat 非空即可接替的空位） */
+  spectators: SpectatorInfo[]
+  /** 本人是观战者时的身份卡；玩家/房主/裁判为 null */
+  watchMe: { id: string; name: string; avatar: string; seat: number | null } | null
+  /** 本次请求使用的令牌；语音等模块要用它而不是 me.id（接替后两者不同） */
+  myToken: string | null
   events: RoomEvent[]
   chat: ChatMessage[]
   finished: FinalResult | null

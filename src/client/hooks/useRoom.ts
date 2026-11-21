@@ -11,7 +11,7 @@ export interface RoomSocket {
   /** 本地倒计时的剩余秒数，无计时返回 null */
   secondsLeft: number | null
   run: (action: string, payload?: unknown) => Promise<string | null>
-  step: () => Promise<string | null>
+  step: (finish?: boolean) => Promise<string | null>
   refresh: () => void
 }
 
@@ -76,11 +76,11 @@ export function useRoom(code: string | null, token: string | null, watch = false
     async (action: string, payload?: unknown) => {
       if (!code || !token) return '身份失效，请重新加入'
       try {
-        const v = await sendAction(code, token, action, payload)
-        offset.current = v.serverNow - Date.now()
-        setView(v)
+        const r = await sendAction(code, token, action, payload)
+        offset.current = r.view.serverNow - Date.now()
+        setView(r.view)
         setError(null)
-        return null
+        return r.error
       } catch (err: any) {
         setError(err?.message ?? '提交失败')
         return err?.message ?? '提交失败'
@@ -89,10 +89,10 @@ export function useRoom(code: string | null, token: string | null, watch = false
     [code, token],
   )
 
-  const step = useCallback(async () => {
+  const step = useCallback(async (finish?: boolean) => {
     if (!code) return '没有房间号'
     try {
-      const r = await sendNext(code, token ?? '')
+      const r = await sendNext(code, token ?? '', !!finish)
       if (r.view) {
         offset.current = r.view.serverNow - Date.now()
         setView(r.view)

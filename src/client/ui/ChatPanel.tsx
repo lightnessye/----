@@ -7,32 +7,40 @@ const hhmm = (at: number) => {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-/** 房间聊天：手机玩家可发言，大屏 / 围观页只读。消息随房间视图轮询同步。 */
+/** 房间聊天：玩家和具名观战者可发言，匿名围观页只读。可折叠，折叠时提示新消息数。 */
 export function ChatPanel({
   view,
   onSend,
   height = 280,
+  defaultOpen = true,
 }: {
   view: RoomView
   onSend?: (text: string) => Promise<string | null>
   height?: number
+  defaultOpen?: boolean
 }) {
   const messages = view.chat ?? []
-  const canSend = !!onSend && !!view.me
+  const myId = view.me?.id ?? view.watchMe?.id ?? null
+  const canSend = !!onSend && !!myId
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [away, setAway] = useState(false)
+  const [open, setOpen] = useState(defaultOpen)
+  const [seenId, setSeenId] = useState(() => (messages.length ? messages[messages.length - 1].id : 0))
   const scrollRef = useRef<HTMLDivElement>(null)
   const stick = useRef(true)
 
   const lastId = messages.length ? messages[messages.length - 1].id : 0
+  const unread = open ? 0 : messages.filter((m) => m.id > seenId && m.by !== myId).length
   useEffect(() => {
+    if (!open) return
+    setSeenId(lastId)
     const el = scrollRef.current
     if (!el) return
     if (stick.current) el.scrollTop = el.scrollHeight
     else setAway(true)
-  }, [lastId])
+  }, [lastId, open])
 
   const onScroll = () => {
     const el = scrollRef.current
@@ -63,12 +71,16 @@ export function ChatPanel({
 
   return (
     <div className="panel chat-panel">
-      <div className="chat-head">
-        <div className="h" style={{ marginBottom: 0 }}>房间聊天</div>
+      <button type="button" className="chat-head chat-toggle" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <div className="h" style={{ marginBottom: 0 }}>💬 房间聊天</div>
+        {unread > 0 && <span className="chip hot chat-unread">{unread} 条新消息</span>}
         <span className="chip chat-count">{messages.length} 条</span>
-        {!canSend && <span className="dim chat-readonly">只看 · 发言请在手机上</span>}
-      </div>
+        {!canSend && <span className="dim chat-readonly">只看</span>}
+        <span className="chat-caret">{open ? '▾' : '▸'}</span>
+      </button>
 
+      {open && (
+      <>
       <div className="chat-scroll-wrap">
         <div className="chat-scroll" style={{ maxHeight: height }} ref={scrollRef} onScroll={onScroll}>
           {messages.length === 0 ? (
@@ -79,7 +91,7 @@ export function ChatPanel({
             </p>
           ) : (
             messages.map((m) => {
-              const mine = !!view.me && m.by === view.me.id
+              const mine = !!myId && m.by === myId
               return (
                 <div key={m.id} className={`chat-msg${mine ? ' mine' : ''}`}>
                   <AvatarBadge id={m.avatar} size={30} />
@@ -136,6 +148,8 @@ export function ChatPanel({
             {text.length > 150 && <span className="dim mono">{text.length}/200</span>}
           </div>
         </>
+      )}
+      </>
       )}
     </div>
   )

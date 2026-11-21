@@ -66,11 +66,6 @@ function seatedInGame(room: Room) {
   return seated(room).filter((p) => !isJudge(room, p.id))
 }
 
-/** 卧底人数按真正开局的人数算：8 人及以上两个，其余一个，且至少留 2 个平民 */
-function plannedInsiderCount(n: number) {
-  return Math.max(1, Math.min(n >= 8 ? 2 : 1, n - 2))
-}
-
 function startDescribe(room: Room) {
   const d = spy(room)
   d.order = shuffle(inGame(room).map((p) => p.id))
@@ -224,7 +219,7 @@ export const spyEngine: GameEngine = {
     const d = spy(room)
     const order = seatedInGame(room)
     // create() 时房间里往往只有房主一个人，卧底数必须等真正开局再按人数算
-    d.insiderCount = plannedInsiderCount(order.length)
+    d.insiderCount = effectiveInsiders(order.length, d.insiderPref)
     const insiderSeats = shuffle(order.map((p) => p.id)).slice(0, d.insiderCount)
     for (const p of order) {
       d.words[p.id] = insiderSeats.includes(p.id) ? d.insider : d.common
@@ -239,7 +234,8 @@ export const spyEngine: GameEngine = {
 
     if (action === 'describe') {
       if (room.phase !== 'describe') return
-      const currentId = d.order[room.turn]
+      const livingOrder = d.order.filter((id) => byId(room, id)?.alive && !byId(room, id)?.watching)
+      const currentId = livingOrder[room.turn]
       if (actor.id !== currentId || d.descriptions[actor.id] !== undefined) return
       if (d.describeMode === 'oral') {
         d.descriptions[actor.id] = '（已开口）'
@@ -254,14 +250,14 @@ export const spyEngine: GameEngine = {
         d.descriptions[actor.id] = text
       }
       const nextTurn = room.turn + 1
-      const livingOrder = d.order.filter((id) => byId(room, id)?.alive)
-      if (nextTurn >= livingOrder.length) {
+      const aliveOrder = d.order.filter((id) => byId(room, id)?.alive && !byId(room, id)?.watching)
+      if (nextTurn >= aliveOrder.length) {
         ev(room, 'judge', '描述完毕，开始投票。每人投一个你觉得最不像同类的人。')
         phase(room, 'vote', { ms: VOTE_MS })
       } else {
         room.turn = nextTurn
         phase(room, 'describe', { ms: speakLimitMs(room, DESC_MS), turn: nextTurn })
-        const nx = byId(room, d.order[nextTurn])
+        const nx = byId(room, aliveOrder[nextTurn])
         ev(room, 'info', `轮到 ${nx?.name ?? '?'}。`)
       }
       return
@@ -380,7 +376,12 @@ export const spyEngine: GameEngine = {
         insider: show ? d.insider : '',
         // lobby 里人数还在涨，展示按当前人数算出来的计划值
         insiderCount:
-          room.phase === 'lobby' ? plannedInsiderCount(inGame(room).length) : d.insiderCount,
+          room.phase === 'lobby' ? effectiveInsiders(inGame(room).length, d.insiderPref) : d.insiderCount,
+        insiderPref: d.insiderPref,
+        insiderMax: maxInsiders(seatedCount),
+        insiderAuto: autoInsiders(seatedCount),
+        seatedCount,
+        describeMode: d.describeMode,
         round: d.round,
         maxRound: MAX_ROUND,
         runoff: d.runoff ?? [],
@@ -459,7 +460,7 @@ export const spyEngine: GameEngine = {
       }
     }
     if (room.phase === 'describe') {
-      const currentId = d.order[room.turn]
+      const currentId = d.order.filter((id) => byId(room, id)?.alive && !byId(room, id)?.watching)[room.turn]
       const mine = currentId === me.id
       const done = d.descriptions[me.id] !== undefined
       const oral = d.describeMode === 'oral'

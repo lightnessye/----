@@ -11,14 +11,14 @@ import {
   type VoiceSignal,
   type VoiceSignalKind,
 } from '../src/shared/voice'
-import { touch } from './rooms'
+import { findPlayer, touch } from './rooms'
 
 const KINDS: VoiceSignalKind[] = ['offer', 'answer', 'ice']
 
 /** 返回错误文案或 null；校验全部通过才落信箱，避免半批写入 */
 export function postVoice(room: Room, token: string, payload: any): string | null {
-  const actor = room.players.find((p) => p.id === token)
-  if (!actor) return '身份失效，请重新加入房间'
+  const actor = findPlayer(room, token)
+  if (!actor || actor.watching) return '身份失效，请重新加入房间'
   if (!actor.micOn) return '先开麦再连接语音'
   const list = Array.isArray(payload?.signals) ? payload.signals.slice(0, VOICE_MAX_BATCH) : []
   if (!list.length) return null
@@ -27,7 +27,7 @@ export function postVoice(room: Room, token: string, payload: any): string | nul
   for (const s of list) {
     if (!KINDS.includes(s?.kind)) return '不认识的语音信令'
     const to = String(s?.to ?? '')
-    if (to === token || !room.players.some((p) => p.id === to)) return '语音信令发给了不在房间里的人'
+    if (to === actor.id || !room.players.some((p) => p.id === to && !p.watching)) return '语音信令发给了不在房间里的人'
     const data = s?.data
     if (!data || typeof data !== 'object' || Array.isArray(data)) return '语音信令格式不对'
     if (JSON.stringify(data).length > VOICE_MAX_DATA) return '语音信令太大了'
@@ -38,7 +38,7 @@ export function postVoice(room: Room, token: string, payload: any): string | nul
   const box = room.voice ?? (room.voice = [])
   for (const s of checked) {
     room.voiceSeq = (room.voiceSeq ?? 0) + 1
-    box.push({ id: room.voiceSeq, from: token, to: s.to, kind: s.kind, data: s.data, at: now })
+    box.push({ id: room.voiceSeq, from: actor.id, to: s.to, kind: s.kind, data: s.data, at: now })
   }
   const cutoff = now - VOICE_TTL_MS
   while (box.length && (box.length > VOICE_KEEP || box[0].at < cutoff)) box.shift()
@@ -52,10 +52,11 @@ export function readVoice(
   token: string,
   since: number,
 ): { signals: VoiceSignal[]; serverNow: number } | string {
-  if (!room.players.some((p) => p.id === token)) return '身份失效，请重新加入房间'
+  const actor = findPlayer(room, token)
+  if (!actor) return '身份失效，请重新加入房间'
   const now = Date.now()
   const signals = (room.voice ?? []).filter(
-    (s) => s.to === token && s.id > since && now - s.at < VOICE_TTL_MS,
+    (s) => s.to === actor.id && s.id > since && now - s.at < VOICE_TTL_MS,
   )
   return { signals, serverNow: now }
 }
