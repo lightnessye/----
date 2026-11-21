@@ -614,12 +614,9 @@ export function act(
     touch(room)
     return null
   }
-<<<<<<< HEAD
   if (actor.watching) return '你在观战席，先回到座位再操作'
-=======
   // 选游戏环节只放行房间级操作（聊天/头像/喊话/麦克风），游戏操作一律挡住
   if (room.phase === 'picking') return '房主正在选游戏，稍等一下'
->>>>>>> 1e4f489806bd00e01da87f9263e5bdf1bef7f5f2
   engine.act(room, actor, action, payload ?? {})
   touch(room)
   syncSpeakTimer(room, Date.now())
@@ -631,11 +628,8 @@ export function nextStep(room: Room, token: string | null): string | null {
   if (!engine) return '游戏引擎缺失'
   const actor = findPlayer(room, token)
   if (token && !actor) return '身份失效，请重新加入房间'
-<<<<<<< HEAD
   if (actor?.watching) return '你在观战席，不能推进游戏'
-=======
   if (room.phase === 'picking') return '房主正在选游戏，先选一个'
->>>>>>> 1e4f489806bd00e01da87f9263e5bdf1bef7f5f2
   if (room.phase === 'lobby') {
     const err = startRoom(room, actor?.id ?? '')
     syncSpeakTimer(room, Date.now())
@@ -648,7 +642,6 @@ export function nextStep(room: Room, token: string | null): string | null {
   return null
 }
 
-<<<<<<< HEAD
 /** 房主/裁判提前结束：不管进行到哪一步，直接进结算 */
 export function forceEnd(room: Room, token: string | null): string | null {
   const actor = findPlayer(room, token)
@@ -658,15 +651,21 @@ export function forceEnd(room: Room, token: string | null): string | null {
   if (room.phase === 'over') return null
   phase(room, 'over')
   ev(room, 'judge', '房主提前结束了这一局，直接结算。')
-=======
+  touch(room)
+  return null
+}
+
 /** 结算后房主点「再选游戏」：清掉本局分数和倒计时，进入选游戏阶段。房号、玩家、裁判设置都保留。 */
 export function resetToPicking(room: Room, token: string): string | null {
-  if (!room.players.some((p) => p.id === token && p.isHost)) return '只有房主能换游戏'
+  const host = findPlayer(room, token)
+  if (!host?.isHost) return '只有房主能换游戏'
   if (room.phase !== 'over') return '等这局结算完才能换游戏'
   for (const p of room.players) {
     p.score = 0
-    p.alive = true
-    p.outReason = null
+    if (!p.watching) {
+      p.alive = true
+      p.outReason = null
+    }
   }
   room.phase = 'picking'
   room.round = 0
@@ -690,13 +689,14 @@ export function resetToPicking(room: Room, token: string): string | null {
 
 /** picking 阶段房主选定下一局：换引擎、重新初始化，回到 lobby，所有端靠轮询同步。 */
 export function pickGame(room: Room, token: string, gameId: string): string | null {
-  if (!room.players.some((p) => p.id === token && p.isHost)) return '只有房主能选游戏'
+  const host = findPlayer(room, token)
+  if (!host?.isHost) return '只有房主能选游戏'
   if (room.phase !== 'picking') return '现在不在选游戏环节'
   const meta = GAME_BY_ID[gameId]
   if (!meta) return '没有这个游戏'
   const engine = engineFor(gameId)
   if (!engine) return '游戏引擎缺失'
-  const n = room.players.length
+  const n = seated(room).length
   if (n < meta.minPlayers || n > meta.maxPlayers) {
     return `${meta.name} 要 ${meta.minPlayers}–${meta.maxPlayers} 人，现在 ${n} 人，换一个吧`
   }
@@ -705,8 +705,10 @@ export function pickGame(room: Room, token: string, gameId: string): string | nu
   room.data = {} as GameData
   for (const p of room.players) {
     p.score = 0
-    p.alive = true
-    p.outReason = null
+    if (!p.watching) {
+      p.alive = true
+      p.outReason = null
+    }
     p.speakMs = 0
   }
   room.round = 0
@@ -736,7 +738,6 @@ export function pickGame(room: Room, token: string, gameId: string): string | nu
   // 与 createRoom 一致：先摆好 lobby，再让引擎初始化（有的引擎 create 只清数据不切阶段）
   room.phase = 'lobby'
   engine.create(room)
->>>>>>> 1e4f489806bd00e01da87f9263e5bdf1bef7f5f2
   touch(room)
   return null
 }
