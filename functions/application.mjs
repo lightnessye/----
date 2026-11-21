@@ -5507,11 +5507,8 @@ function act(room, token, action, payload) {
     touch(room);
     return null;
   }
-<<<<<<< HEAD
   if (actor.watching) return "\u4F60\u5728\u89C2\u6218\u5E2D\uFF0C\u5148\u56DE\u5230\u5EA7\u4F4D\u518D\u64CD\u4F5C";
-=======
   if (room.phase === "picking") return "\u623F\u4E3B\u6B63\u5728\u9009\u6E38\u620F\uFF0C\u7A0D\u7B49\u4E00\u4E0B";
->>>>>>> 1e4f489806bd00e01da87f9263e5bdf1bef7f5f2
   engine.act(room, actor, action, payload ?? {});
   touch(room);
   syncSpeakTimer(room, Date.now());
@@ -5522,11 +5519,8 @@ function nextStep(room, token) {
   if (!engine) return "\u6E38\u620F\u5F15\u64CE\u7F3A\u5931";
   const actor = findPlayer(room, token);
   if (token && !actor) return "\u8EAB\u4EFD\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u52A0\u5165\u623F\u95F4";
-<<<<<<< HEAD
   if (actor?.watching) return "\u4F60\u5728\u89C2\u6218\u5E2D\uFF0C\u4E0D\u80FD\u63A8\u8FDB\u6E38\u620F";
-=======
   if (room.phase === "picking") return "\u623F\u4E3B\u6B63\u5728\u9009\u6E38\u620F\uFF0C\u5148\u9009\u4E00\u4E2A";
->>>>>>> 1e4f489806bd00e01da87f9263e5bdf1bef7f5f2
   if (room.phase === "lobby") {
     const err = startRoom(room, actor?.id ?? "");
     syncSpeakTimer(room, Date.now());
@@ -5538,7 +5532,6 @@ function nextStep(room, token) {
   syncSpeakTimer(room, Date.now());
   return null;
 }
-<<<<<<< HEAD
 function forceEnd(room, token) {
   const actor = findPlayer(room, token);
   if (token && !actor) return "\u8EAB\u4EFD\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u52A0\u5165\u623F\u95F4";
@@ -5547,14 +5540,19 @@ function forceEnd(room, token) {
   if (room.phase === "over") return null;
   phase(room, "over");
   ev(room, "judge", "\u623F\u4E3B\u63D0\u524D\u7ED3\u675F\u4E86\u8FD9\u4E00\u5C40\uFF0C\u76F4\u63A5\u7ED3\u7B97\u3002");
-=======
+  touch(room);
+  return null;
+}
 function resetToPicking(room, token) {
-  if (!room.players.some((p) => p.id === token && p.isHost)) return "\u53EA\u6709\u623F\u4E3B\u80FD\u6362\u6E38\u620F";
+  const host = findPlayer(room, token);
+  if (!host?.isHost) return "\u53EA\u6709\u623F\u4E3B\u80FD\u6362\u6E38\u620F";
   if (room.phase !== "over") return "\u7B49\u8FD9\u5C40\u7ED3\u7B97\u5B8C\u624D\u80FD\u6362\u6E38\u620F";
   for (const p of room.players) {
     p.score = 0;
-    p.alive = true;
-    p.outReason = null;
+    if (!p.watching) {
+      p.alive = true;
+      p.outReason = null;
+    }
   }
   room.phase = "picking";
   room.round = 0;
@@ -5576,13 +5574,14 @@ function resetToPicking(room, token) {
   return null;
 }
 function pickGame(room, token, gameId) {
-  if (!room.players.some((p) => p.id === token && p.isHost)) return "\u53EA\u6709\u623F\u4E3B\u80FD\u9009\u6E38\u620F";
+  const host = findPlayer(room, token);
+  if (!host?.isHost) return "\u53EA\u6709\u623F\u4E3B\u80FD\u9009\u6E38\u620F";
   if (room.phase !== "picking") return "\u73B0\u5728\u4E0D\u5728\u9009\u6E38\u620F\u73AF\u8282";
   const meta = GAME_BY_ID[gameId];
   if (!meta) return "\u6CA1\u6709\u8FD9\u4E2A\u6E38\u620F";
   const engine = engineFor(gameId);
   if (!engine) return "\u6E38\u620F\u5F15\u64CE\u7F3A\u5931";
-  const n = room.players.length;
+  const n = seated(room).length;
   if (n < meta.minPlayers || n > meta.maxPlayers) {
     return `${meta.name} \u8981 ${meta.minPlayers}\u2013${meta.maxPlayers} \u4EBA\uFF0C\u73B0\u5728 ${n} \u4EBA\uFF0C\u6362\u4E00\u4E2A\u5427`;
   }
@@ -5590,8 +5589,10 @@ function pickGame(room, token, gameId) {
   room.data = {};
   for (const p of room.players) {
     p.score = 0;
-    p.alive = true;
-    p.outReason = null;
+    if (!p.watching) {
+      p.alive = true;
+      p.outReason = null;
+    }
     p.speakMs = 0;
   }
   room.round = 0;
@@ -5617,7 +5618,6 @@ function pickGame(room, token, gameId) {
   });
   room.phase = "lobby";
   engine.create(room);
->>>>>>> 1e4f489806bd00e01da87f9263e5bdf1bef7f5f2
   touch(room);
   return null;
 }

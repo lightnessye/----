@@ -12,7 +12,7 @@ import { VoicePanel } from '../ui/VoicePanel'
 import { PlayerGrid } from '../ui/PlayerGrid'
 import { SpectatorBar } from '../ui/SpectatorBar'
 import { RulesModal } from '../ui/RulesModal'
-import { Result } from './Host'
+import { GamePicker, Result } from './Host'
 import { WatchBody } from './Watch'
 import { restartRoom } from '../api'
 import { forgetRoom, go, joinHref, shareHostHref, tokenFor } from '../route'
@@ -139,7 +139,7 @@ export function Phone({
           <PlayerGrid view={view} turnId={turnId} />
         </div>
 
-        {asHost && !isLobby && (
+        {asHost && !isLobby && !isPicking && (
           <div className="host-bar" style={{ marginTop: 14 }}>
             <span className="hb-label">👑 房主主持</span>
             {!isOver ? (
@@ -166,13 +166,13 @@ export function Phone({
         )}
 
         {isLobby ? (
-<<<<<<< HEAD
           <LobbyPhone view={view} run={run} canExit={canExit} />
-=======
-          <LobbyPhone view={view} run={run} />
         ) : isPicking ? (
-          <PickingPhone view={view} run={run} />
->>>>>>> 1e4f489806bd00e01da87f9263e5bdf1bef7f5f2
+          asHost ? (
+            <GamePicker view={view} token={token} refresh={refresh} />
+          ) : (
+            <PickingPhone view={view} run={run} />
+          )
         ) : (
           <>
             <SecretCard view={view} />
@@ -496,7 +496,7 @@ function PickingPhone({
       </div>
       <div className="panel">
         <div className="h">在场的人</div>
-        <Seats view={view} />
+        <PlayerGrid view={view} />
       </div>
       <div className="panel">
         <div className="h">最新播报</div>

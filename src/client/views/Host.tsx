@@ -1,18 +1,9 @@
 import { useState } from 'react'
-<<<<<<< HEAD
-import { configure, disbandRoom, kickPlayer, restartRoom } from '../api'
+import { configure, disbandRoom, kickPlayer, pickGame, resetToPicking, restartRoom } from '../api'
 import { useRoom } from '../hooks/useRoom'
 import { useShareBase } from '../hooks/useShareBase'
 import { uiFor } from '../games'
 import { JudgeBadge, QrImage, Scoreboard, SpeakBoard, Ticker, Timer, fmtSpeak } from '../ui/common'
-=======
-import { configure, pickGame, resetToPicking } from '../api'
-import { useRoom } from '../hooks/useRoom'
-import { useShareBase } from '../hooks/useShareBase'
-import { uiFor } from '../games'
-import { GAMES } from '../../shared/games'
-import { JudgeBadge, QrImage, Seats, Scoreboard, SpeakBoard, Ticker, Timer, fmtSpeak } from '../ui/common'
->>>>>>> 1e4f489806bd00e01da87f9263e5bdf1bef7f5f2
 import { ChatPanel } from '../ui/ChatPanel'
 import { VoicePanel } from '../ui/VoicePanel'
 import { GameSettings } from '../ui/GameSettings'
@@ -29,13 +20,10 @@ import type { Player, RoomView } from '../../shared/types'
 
 export function Host({ code, token, watch }: { code: string; token: string | null; watch?: boolean }) {
   const { view, error, secondsLeft, now, run, step, offline, refresh } = useRoom(code, token, watch)
-<<<<<<< HEAD
   const [rules, setRules] = useState(false)
   const [overErr, setOverErr] = useState<string | null>(null)
-=======
   const [resetErr, setResetErr] = useState<string | null>(null)
   const [resetting, setResetting] = useState(false)
->>>>>>> 1e4f489806bd00e01da87f9263e5bdf1bef7f5f2
 
   if (error && !view) {
     return (
@@ -140,37 +128,17 @@ export function Host({ code, token, watch }: { code: string; token: string | nul
                     </div>
                   )}
 
-<<<<<<< HEAD
-              {!watch && (
-                <div className="stagebar">
-                  {isOver ? (
-                    <button className="btn primary" onClick={() => void backToLobby()}>
-                      返回大厅 · 开下一局
-                    </button>
-                  ) : (
-                    <button className="btn go" onClick={() => void step()}>
-                      下一步 →
-                    </button>
-                  )}
-                  <a className="btn ghost tiny" href={joinHref(view.code)}>
-                    手机加入页
-                  </a>
-                  {!isOver && (
-                    <button
-                      className="btn ghost tiny"
-                      onClick={() => {
-                        if (confirm('直接结算这一局？正在填写的内容会丢掉。')) void step(true)
-                      }}
-                      style={{ marginLeft: 'auto' }}
-                    >
-                      提前结束
-                    </button>
-=======
                   {!watch && (
                     <div className="stagebar">
-                      <button className="btn go" onClick={() => void step()}>
-                        {isOver ? '停在这一页' : '下一步 →'}
-                      </button>
+                      {isOver ? (
+                        <button className="btn primary" onClick={() => void backToLobby()}>
+                          返回大厅 · 开下一局
+                        </button>
+                      ) : (
+                        <button className="btn go" onClick={() => void step()}>
+                          下一步 →
+                        </button>
+                      )}
                       {isOver && (
                         <button className="btn" disabled={resetting} onClick={() => void handleReset()}>
                           {resetting ? '正在切换…' : '再选游戏'}
@@ -179,24 +147,11 @@ export function Host({ code, token, watch }: { code: string; token: string | nul
                       <a className="btn ghost tiny" href={joinHref(view.code)}>
                         手机加入页
                       </a>
-                      {view.me &&
-                        view.hostPlays &&
-                        !(view.judgeMode === 'human' && view.refereeId === view.me.id) && (
-                        <a
-                          className="btn ghost tiny"
-                          href={phoneHref(view.code)}
-                          target="_blank"
-                          rel="noreferrer"
-                          title="在新标签页打开你自己的玩家页，轮到你时在那里提交"
-                        >
-                          我也玩
-                        </a>
-                      )}
                       {!isOver && (
                         <button
                           className="btn ghost tiny"
                           onClick={() => {
-                            if (confirm('直接结算这一局？正在填写的内容会丢掉。')) void step()
+                            if (confirm('直接结算这一局？正在填写的内容会丢掉。')) void step(true)
                           }}
                           style={{ marginLeft: 'auto' }}
                         >
@@ -209,7 +164,6 @@ export function Host({ code, token, watch }: { code: string; token: string | nul
                     <div className="banner err" style={{ marginTop: 12 }}>
                       {resetErr}
                     </div>
->>>>>>> 1e4f489806bd00e01da87f9263e5bdf1bef7f5f2
                   )}
                 </>
               )}
@@ -217,23 +171,14 @@ export function Host({ code, token, watch }: { code: string; token: string | nul
             </div>
 
             <div className="stage-side">
-<<<<<<< HEAD
-              {!watch && <RefereeConsole view={view} run={run} />}
-=======
               {!watch && !isPicking && <RefereeConsole view={view} run={run} />}
-              {!watch && !isPicking && <SpeakLimit view={view} token={token} />}
->>>>>>> 1e4f489806bd00e01da87f9263e5bdf1bef7f5f2
               <div className="panel">
                 <div className="h">裁判播报</div>
                 <Ticker events={view.events} limit={9} />
               </div>
               <div className="panel">
                 <div className="h">在场玩家</div>
-<<<<<<< HEAD
-                <PlayerGrid view={view} turnId={ui.turnId?.(view) ?? null} />
-=======
-                <Seats view={view} turnId={isPicking ? null : ui.turnId?.(view) ?? null} compact />
->>>>>>> 1e4f489806bd00e01da87f9263e5bdf1bef7f5f2
+                <PlayerGrid view={view} turnId={isPicking ? null : ui.turnId?.(view) ?? null} />
               </div>
               {!isPicking && <SpeakBoard view={view} now={now} />}
               <VoicePanel view={view} run={run} />
@@ -646,7 +591,7 @@ function SpeakLimit({ view, token }: { view: RoomView; token: string | null }) {
 }
 
 /** picking 阶段：房主在房间里直接挑下一局，其他端只能看。复用首页候选列表的 .alts/.alt 样式。 */
-function GamePicker({
+export function GamePicker({
   view,
   token,
   refresh,
@@ -657,7 +602,7 @@ function GamePicker({
 }) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
-  const n = view.players.length
+  const n = view.players.filter((p) => !p.watching).length
   const canPick = !!token && view.role === 'host'
 
   const choose = async (gameId: string) => {
