@@ -14,12 +14,9 @@ import {
   kickRoute,
   metaBody,
   nextRoute,
-<<<<<<< HEAD
-  restartRoute,
-=======
   pickRoute,
   resetRoute,
->>>>>>> 1e4f489806bd00e01da87f9263e5bdf1bef7f5f2
+  restartRoute,
   viewRoute,
   voiceGetRoute,
   voicePostRoute,

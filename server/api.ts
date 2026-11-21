@@ -21,13 +21,10 @@ import {
   nextStep,
   forceEnd,
   normalize,
-<<<<<<< HEAD
-  removeRoom,
-  restartRoom,
-=======
   pickGame,
+  removeRoom,
   resetToPicking,
->>>>>>> 1e4f489806bd00e01da87f9263e5bdf1bef7f5f2
+  restartRoom,
   roomCount,
   sanitizeName,
   startRoom,
